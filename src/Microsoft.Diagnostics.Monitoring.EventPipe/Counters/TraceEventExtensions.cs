@@ -44,9 +44,9 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string providerName,
             string counterName,
             int? id,
-            string meterTags,
-            string instrumentTags,
-            string scopeHash,
+            string meterTags = null,
+            string instrumentTags = null,
+            string scopeHash = null,
             string providerVersion = null,
             string counterUnit = null,
             string counterDescription = null)
@@ -85,7 +85,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             return metadata;
         }
 
-        private static CounterMetadata GetCounterMetadata(string providerName, string counterName, int? id)
+        private static CounterMetadata GetCounterMetadata(string providerName, string counterName, int? id, string unit)
         {
             // Lookup by ID is preferred because it eliminates ambiguity in the case of duplicate provider/counter names.
             // IDs are present starting in MetricsEventSource 9.0.
@@ -103,7 +103,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
 
             // For EventCounter based events we expect to fall through here the first time a new counter is observed
             // For MetricsEventSource events we should never reach here unless the BeginInstrumentRecording event was dropped.
-            return AddCounterMetadata(providerName, counterName, id, null, null, null);
+            return AddCounterMetadata(providerName: providerName, counterName: counterName, id: id, counterUnit: unit);
         }
 
         public static bool TryGetCounterMetadata(string providerName, string counterName, int? instrumentId, out CounterMetadata counterMetadata)
@@ -246,7 +246,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string meterName = (string)obj.PayloadValue(1);
             //string meterVersion = (string)obj.PayloadValue(2);
             string instrumentName = (string)obj.PayloadValue(3);
-            //string unit = (string)obj.PayloadValue(4);
+            string unit = (string)obj.PayloadValue(4);
             string tags = (string)obj.PayloadValue(5);
             string lastValueText = (string)obj.PayloadValue(6);
             int? id = null;
@@ -261,7 +261,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
                 return;
             }
 
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id, unit);
             // the value might be an empty string indicating no measurement was provided this collection interval
             if (double.TryParse(lastValueText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double lastValue))
             {
@@ -345,7 +345,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string meterName = (string)traceEvent.PayloadValue(1);
             //string meterVersion = (string)obj.PayloadValue(2);
             string instrumentName = (string)traceEvent.PayloadValue(3);
-            //string unit = (string)traceEvent.PayloadValue(4);
+            string unit = (string)traceEvent.PayloadValue(4);
             string tags = (string)traceEvent.PayloadValue(5);
             string rateText = (string)traceEvent.PayloadValue(6);
             //Starting in .NET 8 we also publish the absolute value of these counters
@@ -364,7 +364,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             {
                 return;
             }
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id, unit);
             if (double.TryParse(rateText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double rate))
             {
                 if (absoluteValueText != null &&
@@ -401,7 +401,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string meterName = (string)traceEvent.PayloadValue(1);
             //string meterVersion = (string)obj.PayloadValue(2);
             string instrumentName = (string)traceEvent.PayloadValue(3);
-            //string unit = (string)traceEvent.PayloadValue(4);
+            string unit = (string)traceEvent.PayloadValue(4);
             string tags = (string)traceEvent.PayloadValue(5);
             string rateText = (string)traceEvent.PayloadValue(6);
             string valueText = (string)traceEvent.PayloadValue(7);
@@ -422,7 +422,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
                 rateText = valueText;
             }
 
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id, unit);
             if (double.TryParse(rateText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double rate)
                 && double.TryParse(valueText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
             {
@@ -451,7 +451,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string meterName = (string)obj.PayloadValue(1);
             //string meterVersion = (string)obj.PayloadValue(2);
             string instrumentName = (string)obj.PayloadValue(3);
-            //string unit = (string)obj.PayloadValue(4);
+            string unit = (string)obj.PayloadValue(4);
             string tags = (string)obj.PayloadValue(5);
             string quantilesText = (string)obj.PayloadValue(6);
 
@@ -481,7 +481,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
 
             //Note quantiles can be empty.
             IList<Quantile> quantiles = ParseQuantiles(quantilesText);
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id, unit);
             payload = new AggregatePercentilePayload(metadata, displayName: null, displayUnits: null, tags, count, sum, quantiles, obj.TimeStamp);
         }
 
