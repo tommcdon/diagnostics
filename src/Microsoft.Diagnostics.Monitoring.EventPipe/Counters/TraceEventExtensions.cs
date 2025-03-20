@@ -32,15 +32,17 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
         public bool UseCounterRateAndValuePayload { get; set; }
     }
 
-    internal record struct ProviderAndCounter(string ProviderName, string CounterName);
+    internal record struct ProviderAndCounter(int processId, string ProviderName, string CounterName);
+    internal record struct TraceContextAndTraceEventId(int processId, int traceEventId);
 
     internal static partial class TraceEventExtensions
     {
         private static Dictionary<ProviderAndCounter, CounterMetadata> counterMetadataByName = new();
-        private static Dictionary<int, CounterMetadata> counterMetadataById = new();
+        private static Dictionary<TraceContextAndTraceEventId, CounterMetadata> counterMetadataById = new();
         private static HashSet<string> inactiveSharedSessions = new(StringComparer.OrdinalIgnoreCase);
 
         private static CounterMetadata AddCounterMetadata(
+            int pid,
             string providerName,
             string counterName,
             int? id,
@@ -52,7 +54,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             string counterDescription = null)
         {
             CounterMetadata metadata;
-            if (id.HasValue && counterMetadataById.TryGetValue(id.Value, out metadata))
+            if (id.HasValue && counterMetadataById.TryGetValue(new(pid, id.Value), out metadata))
             {
                 return metadata;
             }
@@ -60,7 +62,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             // Its possible that we previously indexed this counter by name but it didn't have an ID at that point because we weren't
             // listening to it then.
             // Its also possible that we previously indexed a counter with the same name as this one but with different tags or scope hash.
-            ProviderAndCounter providerAndCounter = new(providerName, counterName);
+            ProviderAndCounter providerAndCounter = new(pid, providerName, counterName);
             if (counterMetadataByName.TryGetValue(providerAndCounter, out metadata))
             {
                 // we found a counter that matches the name, but it might not match everything
@@ -69,7 +71,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
                     // add the ID index if it didn't exist before
                     if (id.HasValue)
                     {
-                        counterMetadataById.TryAdd(id.Value, metadata);
+                        counterMetadataById.TryAdd(new(pid, id.Value), metadata);
                     }
                     return metadata;
                 }
@@ -79,23 +81,23 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             metadata = new CounterMetadata(providerName, providerVersion, counterName, counterUnit, counterDescription, id, meterTags, instrumentTags, scopeHash);
             if (id.HasValue)
             {
-                counterMetadataById.TryAdd(id.Value, metadata);
+                counterMetadataById.TryAdd(new TraceContextAndTraceEventId(pid, id.Value), metadata);
             }
             counterMetadataByName.TryAdd(providerAndCounter, metadata);
             return metadata;
         }
 
-        private static CounterMetadata GetCounterMetadata(string providerName, string counterName, int? id)
+        private static CounterMetadata GetCounterMetadata(int pid, string providerName, string counterName, int? id)
         {
             // Lookup by ID is preferred because it eliminates ambiguity in the case of duplicate provider/counter names.
             // IDs are present starting in MetricsEventSource 9.0.
             // Duplicate named providers/counters might still have different tags or scope hashes
             CounterMetadata metadata;
-            if (id.HasValue && counterMetadataById.TryGetValue(id.Value, out metadata))
+            if (id.HasValue && counterMetadataById.TryGetValue(new(pid, id.Value), out metadata))
             {
                 return metadata;
             }
-            ProviderAndCounter providerAndCounter = new(providerName, counterName);
+            ProviderAndCounter providerAndCounter = new(pid, providerName, counterName);
             if (counterMetadataByName.TryGetValue(providerAndCounter, out metadata))
             {
                 return metadata;
@@ -103,17 +105,17 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
 
             // For EventCounter based events we expect to fall through here the first time a new counter is observed
             // For MetricsEventSource events we should never reach here unless the BeginInstrumentRecording event was dropped.
-            return AddCounterMetadata(providerName, counterName, id, null, null, null);
+            return AddCounterMetadata(pid, providerName, counterName, id, null, null, null);
         }
 
-        public static bool TryGetCounterMetadata(string providerName, string counterName, int? instrumentId, out CounterMetadata counterMetadata)
+        public static bool TryGetCounterMetadata(int pid, string providerName, string counterName, int? instrumentId, out CounterMetadata counterMetadata)
         {
-            if (instrumentId.HasValue && counterMetadataById.TryGetValue(instrumentId.Value, out counterMetadata))
+            if (instrumentId.HasValue && counterMetadataById.TryGetValue(new(pid, instrumentId.Value), out counterMetadata))
             {
                 return true;
             }
 
-            ProviderAndCounter providerAndCounter = new(providerName, counterName);
+            ProviderAndCounter providerAndCounter = new(pid, providerName, counterName);
             return counterMetadataByName.TryGetValue(providerAndCounter, out counterMetadata);
         }
 
@@ -261,7 +263,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
                 return;
             }
 
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(obj.ProcessID, meterName, instrumentName, id);
             // the value might be an empty string indicating no measurement was provided this collection interval
             if (double.TryParse(lastValueText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double lastValue))
             {
@@ -319,6 +321,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             }
             payload = new BeginInstrumentReportingPayload(
                 AddCounterMetadata(
+                    traceEvent.ProcessID,
                     meterName,
                     instrumentName,
                     instrumentID,
@@ -364,7 +367,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
             {
                 return;
             }
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(traceEvent.ProcessID, meterName, instrumentName, id);
             if (double.TryParse(rateText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double rate))
             {
                 if (absoluteValueText != null &&
@@ -422,7 +425,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
                 rateText = valueText;
             }
 
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(traceEvent.ProcessID, meterName, instrumentName, id);
             if (double.TryParse(rateText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double rate)
                 && double.TryParse(valueText, NumberStyles.Number | NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
             {
@@ -481,7 +484,7 @@ namespace Microsoft.Diagnostics.Monitoring.EventPipe
 
             //Note quantiles can be empty.
             IList<Quantile> quantiles = ParseQuantiles(quantilesText);
-            CounterMetadata metadata = GetCounterMetadata(meterName, instrumentName, id);
+            CounterMetadata metadata = GetCounterMetadata(obj.ProcessID, meterName, instrumentName, id);
             payload = new AggregatePercentilePayload(metadata, displayName: null, displayUnits: null, tags, count, sum, quantiles, obj.TimeStamp);
         }
 
