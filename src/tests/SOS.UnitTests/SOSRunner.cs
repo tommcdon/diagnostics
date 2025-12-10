@@ -1071,13 +1071,13 @@ public class SOSRunner : IDisposable
                 break;
             case NativeDebugger.DotNetDump:
                 // If a single-file app, add the path to runtime so SOS can find DAC/DBI locally.
-                if (_config.PublishSingleFile)
-                {
-                    if (!string.IsNullOrEmpty(runtimeSymbolsPath))
-                    {
-                        commands.Add($"setclrpath {runtimeSymbolsPath}");
-                    }
-                }
+                // if (_config.PublishSingleFile)
+                // {
+                //     if (!string.IsNullOrEmpty(runtimeSymbolsPath))
+                //     {
+                //         commands.Add($"setclrpath {runtimeSymbolsPath}");
+                //     }
+                // }
                 if (!string.IsNullOrEmpty(setSymbolServer))
                 {
                     commands.Add($"setsymbolserver {setSymbolServer}");
