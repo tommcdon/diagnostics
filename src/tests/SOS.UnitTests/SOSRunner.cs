@@ -93,7 +93,7 @@ public class SOSRunner : IDisposable
             {
                 return _testDump &&
                     // Only single file dumps on Windows
-                    (!TestConfiguration.PublishSingleFile || OS.Kind == OSKind.Windows) &&
+                    //(!TestConfiguration.PublishSingleFile || OS.Kind == OSKind.Windows) &&
                     // Generate and test dumps if on OSX or Alpine only if the runtime is 6.0 or greater
                     (!(OS.Kind == OSKind.OSX || OS.IsAlpine) || TestConfiguration.RuntimeFrameworkVersionMajor > 5);
             }
@@ -118,7 +118,7 @@ public class SOSRunner : IDisposable
                 if (dumpGeneration == DumpGenerator.CreateDump)
                 {
                     if (!TestConfiguration.CreateDumpExists ||
-                        TestConfiguration.PublishSingleFile ||
+                        //TestConfiguration.PublishSingleFile ||
                         TestConfiguration.GenerateDumpWithLLDB() ||
                         TestConfiguration.GenerateDumpWithGDB())
                     {
@@ -136,7 +136,8 @@ public class SOSRunner : IDisposable
             {
                 // Currently neither cdb or dotnet-dump collect generates valid dumps on Windows for an single file app
                 // Issue: https://github.com/dotnet/diagnostics/issues/2515
-                return TestConfiguration.PublishSingleFile ? SOSRunner.DumpType.Full : _dumpType;
+                //return TestConfiguration.PublishSingleFile ? SOSRunner.DumpType.Full : _dumpType;
+                return _dumpType;
             }
             set { _dumpType = value; }
         }
@@ -151,7 +152,7 @@ public class SOSRunner : IDisposable
 
         public bool TestCrashReport
         {
-            get { return _testCrashReport && DumpGenerator == DumpGenerator.CreateDump && OS.Kind != OSKind.Windows && TestConfiguration.RuntimeFrameworkVersionMajor >= 6; }
+            get { return _testCrashReport && !TestConfiguration.PublishSingleFile && DumpGenerator == DumpGenerator.CreateDump && OS.Kind != OSKind.Windows && TestConfiguration.RuntimeFrameworkVersionMajor >= 6; }
             set { _testCrashReport = value; }
         }
 
@@ -218,6 +219,8 @@ public class SOSRunner : IDisposable
         TestConfiguration config = information.TestConfiguration;
         DumpGenerator dumpGeneration = information.DumpGenerator;
         string dumpName = null;
+
+        Console.WriteLine($"Creating dump for {information.DebuggeeName} using {dumpGeneration}");
 
         Directory.CreateDirectory(information.DebuggeeDumpOutputRootDir);
 

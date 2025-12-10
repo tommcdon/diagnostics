@@ -143,6 +143,8 @@ public static class SOSTestHelpers
         bool testMini = false,
         SOSRunner.DumpGenerator dumpGenerator = SOSRunner.DumpGenerator.CreateDump)
     {
+
+        Console.WriteLine($"Running SOS Test: {testName ?? scriptName} Debuggee: {debuggeeName} TestLive: {testLive} TestDump: {testDump} TestTriage: {testTriage} TestMini: {testMini} DumpGenerator: {dumpGenerator}");
         await RunTest(scriptName,
             new SOSRunner.TestInformation
             {
@@ -151,7 +153,7 @@ public static class SOSTestHelpers
                 TestLive = testLive,
                 TestDump = testDump,
                 DebuggeeName = debuggeeName,
-                DumpType = SOSRunner.DumpType.Heap,
+                DumpType = config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
                 DumpGenerator = dumpGenerator,
             },
             output);
@@ -261,10 +263,10 @@ public class SOS
             throw new SkipTestException("Test only supports CDB and therefore only runs on Windows");
         }
 
-        if (config.PublishSingleFile)
+        /*if (config.PublishSingleFile)
         {
             throw new SkipTestException("Single file does not support mini dumps");
-        }
+        }*/
 
         // The default dumpGenerator, CreateDump, only supports taking dumps at exceptions.
         // DotnetDump could support taking a dump at a breakpoint, but this SOS test framework doesn't currently support this operation.
@@ -423,7 +425,7 @@ public class SOS
                 DumpDiagnostics = config.IsNETCore && config.RuntimeFrameworkVersionMajor >= 6,
                 // Single file dumps don't capture the overflow exception info so disable testing against a dump
                 // Issue: https://github.com/dotnet/diagnostics/issues/2515
-                TestDump = !config.PublishSingleFile,
+                //TestDump = !config.PublishSingleFile,
                 // The .NET Core createdump facility may not catch stack overflow so use gdb to generate dump
                 DumpGenerator = config.StackOverflowCreatesDump ? SOSRunner.DumpGenerator.CreateDump : SOSRunner.DumpGenerator.NativeDebugger
             },
