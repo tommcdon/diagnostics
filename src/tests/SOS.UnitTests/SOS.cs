@@ -145,6 +145,12 @@ public static class SOSTestHelpers
     {
 
         Console.WriteLine($"Running SOS Test: {testName ?? scriptName} Debuggee: {debuggeeName} TestLive: {testLive} TestDump: {testDump} TestTriage: {testTriage} TestMini: {testMini} DumpGenerator: {dumpGenerator}");
+
+        // bool canRun = false;
+        // while (!canRun)
+        // {
+        //     System.Threading.Thread.Sleep(100);
+        // }
         await RunTest(scriptName,
             new SOSRunner.TestInformation
             {
