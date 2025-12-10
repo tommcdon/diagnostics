@@ -21,7 +21,7 @@
   <RunTestsWindows_x86 Condition="'$(TargetArchitecture)' != 'x86'">false</RunTestsWindows_x86>
 
   <TestSingleFile>true</TestSingleFile>
-  <TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile>
+  <!-- TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile -->
 
   <Options>
     <!-- Run OpenVirtualProcess tests on Windows -->

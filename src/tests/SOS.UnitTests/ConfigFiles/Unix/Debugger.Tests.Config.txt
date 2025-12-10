@@ -25,7 +25,7 @@
   <TestWebApp3 Condition="'$(InternalReleaseTesting)' == 'true'">false</TestWebApp3>
 
   <TestSingleFile>true</TestSingleFile>
-  <TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile>
+  <!-- TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile -->
 
   <DebuggeeSourceRoot>$(RepoRootDir)/src/tests/SOS.UnitTests/Debuggees</DebuggeeSourceRoot>
   <DebuggeeMsbuildAuxRoot>$(RepoRootDir)/eng/AuxMsbuildFiles</DebuggeeMsbuildAuxRoot>

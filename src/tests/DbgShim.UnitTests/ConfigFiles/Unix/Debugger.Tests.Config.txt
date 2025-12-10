@@ -25,7 +25,7 @@
   <RunTestsLinux_arm64 Condition="'$(TargetArchitecture)' != 'arm64'">false</RunTestsLinux_arm64>
 
   <TestSingleFile>true</TestSingleFile>
-  <TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile>
+  <!-- TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile -->
 
   <Options>
     <!-- Run OpenVirtualProcess tests on Linux -->

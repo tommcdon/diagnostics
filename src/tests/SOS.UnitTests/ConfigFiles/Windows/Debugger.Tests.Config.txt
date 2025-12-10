@@ -31,7 +31,7 @@
   <TestDesktop Condition="'$(TargetArchitecture)' == 'arm64'">false</TestDesktop>
 
   <TestSingleFile>true</TestSingleFile>
-  <TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile>
+  <!-- TestSingleFile Condition="'$(PrivateBuildTesting)' == 'true'">false</TestSingleFile -->
 
   <DesktopFrameworkPath Condition="$(TargetArchitecture) == x64">$(WinDir)\Microsoft.Net\Framework64\v4.0.30319\</DesktopFrameworkPath>
   <DesktopFrameworkPath Condition="$(TargetArchitecture) != x64">$(WinDir)\Microsoft.Net\Framework\v4.0.30319\</DesktopFrameworkPath>
