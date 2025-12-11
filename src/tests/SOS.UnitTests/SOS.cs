@@ -41,9 +41,7 @@ public static class SOSTestHelpers
             // Filter out configurations for specific tests
             .Where(c => c.AllSettings.GetValueOrDefault("TestName") == null)
             // Filter for only .NET core configurations
-            .Where(c => c.IsNETCore)
-            // Filter out single file scenarios
-            .Where(c => !c.PublishSingleFile);
+            .Where(c => c.IsNETCore);
 
         TestConfiguration AddSetting(TestConfiguration inputConfiguration, string key, string value)
         {
@@ -159,7 +157,6 @@ public static class SOSTestHelpers
                 TestLive = testLive,
                 TestDump = testDump,
                 DebuggeeName = debuggeeName,
-                DumpType = OS.Kind != OSKind.Windows && config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
                 DumpGenerator = dumpGenerator,
             },
             output);
@@ -431,7 +428,7 @@ public class SOS
                 DumpDiagnostics = config.IsNETCore && config.RuntimeFrameworkVersionMajor >= 6,
                 // Single file dumps don't capture the overflow exception info so disable testing against a dump
                 // Issue: https://github.com/dotnet/diagnostics/issues/2515
-                //TestDump = !config.PublishSingleFile,
+                TestDump = !config.PublishSingleFile,
                 // The .NET Core createdump facility may not catch stack overflow so use gdb to generate dump
                 DumpGenerator = config.StackOverflowCreatesDump ? SOSRunner.DumpGenerator.CreateDump : SOSRunner.DumpGenerator.NativeDebugger
             },
@@ -683,7 +680,6 @@ public class SOS
                 DebuggeeArguments = "dumpgen",
                 DumpNameSuffix = "dumpgen",
                 UsePipeSync = true,
-                DumpType = OS.Kind != OSKind.Windows && config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
                 DumpGenerator = SOSRunner.DumpGenerator.DotNetDump,
             },
             Output);

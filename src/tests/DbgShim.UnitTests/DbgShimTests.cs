@@ -135,7 +135,7 @@ namespace Microsoft.Diagnostics
         [SkippableTheory, MemberData(nameof(Configurations))]
         public async Task Attach3(TestConfiguration config)
         {
-            if (OS.Kind == OSKind.OSX && config.PublishSingleFile)
+            if ((OS.Kind == OSKind.OSX || config.IsPrivateBuildTesting()) && config.PublishSingleFile)
             {
                 throw new SkipTestException("Attach3 single-file on MacOS");
             }
@@ -220,7 +220,7 @@ namespace Microsoft.Diagnostics
         [SkippableTheory, MemberData(nameof(Configurations))]
         public async Task CreateDebuggingInterfaceFromVersion3(TestConfiguration config)
         {
-            if (OS.Kind == OSKind.OSX && config.PublishSingleFile)
+            if ((OS.Kind == OSKind.OSX || config.IsPrivateBuildTesting()) && config.PublishSingleFile)
             {
                 throw new SkipTestException("CreateDebuggingInterfaceFromVersion3 single-file on MacOS");
             }
