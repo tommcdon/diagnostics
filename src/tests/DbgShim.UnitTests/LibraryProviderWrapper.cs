@@ -41,19 +41,21 @@ namespace SOS.Hosting
         private readonly ImmutableArray<byte> _runtimeModuleBuildId;
         private readonly string _dbiModulePath;
         private readonly string _dacModulePath;
+        private readonly bool _isPrivateBuild;
         private ISymbolService _symbolService;
 
-        public LibraryProviderWrapper(string runtimeModulePath, string dbiModulePath, string dacModulePath)
-           : this(GetRunningOS(), GetBuildId(runtimeModulePath), dbiModulePath, dacModulePath)
+        public LibraryProviderWrapper(string runtimeModulePath, string dbiModulePath, string dacModulePath, bool isPrivateBuild)
+           : this(GetRunningOS(), GetBuildId(runtimeModulePath), dbiModulePath, dacModulePath, isPrivateBuild)
         {
         }
 
-        public LibraryProviderWrapper(OSPlatform targetOS, ImmutableArray<byte> runtimeModuleBuildId, string dbiModulePath, string dacModulePath)
+        public LibraryProviderWrapper(OSPlatform targetOS, ImmutableArray<byte> runtimeModuleBuildId, string dbiModulePath, string dacModulePath, bool isPrivateBuild)
         {
             _targetOS = targetOS;
             _runtimeModuleBuildId = runtimeModuleBuildId;
             _dbiModulePath = dbiModulePath;
             _dacModulePath = dacModulePath;
+            _isPrivateBuild = isPrivateBuild;
 
             VTableBuilder builder = AddInterface(IID_ICLRDebuggingLibraryProvider, validate: false);
             builder.AddMethod(new ProvideLibraryDelegate(ProvideLibrary));
@@ -303,15 +305,23 @@ namespace SOS.Hosting
                 }
                 if (modulePath != null)
                 {
-                    switch (indexType)
+                    if (_isPrivateBuild)
                     {
-                        case LIBRARY_PROVIDER_INDEX_TYPE.Identity:
-                            TestBuildId(GetBuildId(modulePath), buildId);
-                            break;
+                        // For private builds we can't verify the build id
+                        Trace.TraceWarning("LibraryProviderWrapper.ProvideUnixLibrary skipping build id verification for private build");
+                    }
+                    else
+                    {
+                        switch (indexType)
+                        {
+                            case LIBRARY_PROVIDER_INDEX_TYPE.Identity:
+                                TestBuildId(GetBuildId(modulePath), buildId);
+                                break;
 
-                        case LIBRARY_PROVIDER_INDEX_TYPE.Runtime:
-                            TestBuildId(_runtimeModuleBuildId, buildId);
-                            break;
+                            case LIBRARY_PROVIDER_INDEX_TYPE.Runtime:
+                                TestBuildId(_runtimeModuleBuildId, buildId);
+                                break;
+                        }
                     }
                     modulePathOut = Marshal.StringToCoTaskMemUni(modulePath);
                     Trace.TraceInformation($"LibraryProviderWrapper.ProvideUnixLibrary SUCCEEDED {modulePath}");

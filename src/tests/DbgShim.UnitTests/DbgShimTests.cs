@@ -261,7 +261,7 @@ namespace Microsoft.Diagnostics
                 IRuntime runtime = runtimeService.EnumerateRuntimes().Single();
 
                 CorDebugDataTargetWrapper dataTarget = new(target.Services, runtime);
-                LibraryProviderWrapper libraryProvider = new(target.OperatingSystem, runtime.RuntimeModule.BuildId, runtime.GetDbiFilePath(), runtime.GetDacFilePath(out bool verifySignature));
+                LibraryProviderWrapper libraryProvider = new(target.OperatingSystem, runtime.RuntimeModule.BuildId, runtime.GetDbiFilePath(), runtime.GetDacFilePath(out bool verifySignature), cfg.IsPrivateBuildTesting());
                 ClrDebuggingVersion maxDebuggerSupportedVersion = new()
                 {
                     StructVersion = 0,
@@ -383,7 +383,7 @@ namespace Microsoft.Diagnostics
                     result = DbgShimAPI.RegisterForRuntimeStartupEx(debuggeeInfo.ProcessId, applicationGroupId, parameter: IntPtr.Zero, out unregister, callback);
                     break;
                 case 3:
-                    LibraryProviderWrapper libraryProvider = new(config.RuntimeModulePath(), config.DbiModulePath(), config.DacModulePath());
+                    LibraryProviderWrapper libraryProvider = new(config.RuntimeModulePath(), config.DbiModulePath(), config.DacModulePath(), config.IsPrivateBuildTesting());
                     result = DbgShimAPI.RegisterForRuntimeStartup3(debuggeeInfo.ProcessId, applicationGroupId, parameter: IntPtr.Zero, libraryProvider.ILibraryProvider, out unregister, callback);
                     break;
                 default:
@@ -461,7 +461,7 @@ namespace Microsoft.Diagnostics
                             result = DbgShimAPI.CreateDebuggingInterfaceFromVersion2(DbgShimAPI.CorDebugVersion_4_0, versionString, applicationGroupId, out corDebug);
                             break;
                         case 3:
-                            LibraryProviderWrapper libraryProvider = new(config.RuntimeModulePath(), config.DbiModulePath(), config.DacModulePath());
+                            LibraryProviderWrapper libraryProvider = new(config.RuntimeModulePath(), config.DbiModulePath(), config.DacModulePath(), config.IsPrivateBuildTesting());
                             result = DbgShimAPI.CreateDebuggingInterfaceFromVersion3(DbgShimAPI.CorDebugVersion_4_0, versionString, applicationGroupId, libraryProvider.ILibraryProvider, out corDebug);
                             break;
                         default:
@@ -581,6 +581,11 @@ namespace Microsoft.Diagnostics
         public static string DebuggeeName(this TestConfiguration config)
         {
             return config.GetValue("DebuggeeName");
+        }
+
+        public static bool IsPrivateBuildTesting(this TestConfiguration config)
+        {
+            return "true".Equals(config.GetValue("PrivateBuildTesting"), StringComparison.OrdinalIgnoreCase);
         }
     }
 }

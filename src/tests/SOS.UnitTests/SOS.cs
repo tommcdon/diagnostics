@@ -159,7 +159,7 @@ public static class SOSTestHelpers
                 TestLive = testLive,
                 TestDump = testDump,
                 DebuggeeName = debuggeeName,
-                DumpType = config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
+                DumpType = OS.Kind != OSKind.Windows && config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
                 DumpGenerator = dumpGenerator,
             },
             output);
@@ -683,6 +683,7 @@ public class SOS
                 DebuggeeArguments = "dumpgen",
                 DumpNameSuffix = "dumpgen",
                 UsePipeSync = true,
+                DumpType = OS.Kind != OSKind.Windows && config.PublishSingleFile ? SOSRunner.DumpType.Full : SOSRunner.DumpType.Heap,
                 DumpGenerator = SOSRunner.DumpGenerator.DotNetDump,
             },
             Output);
