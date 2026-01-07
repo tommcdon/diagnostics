@@ -78,6 +78,7 @@ public static class SOSTestHelpers
         ITestOutputHelper output)
     {
         information.OutputHelper = output;
+        Console.WriteLine($"Starting SOS Test: {information.TestName ?? scriptName} Debuggee: {information.DebuggeeName} TestLive: {information.TestLive} TestDump: {information.TestDump} {information.DumpDiagnostics}");
 
         if (information.TestLive)
         {
@@ -139,7 +140,8 @@ public static class SOSTestHelpers
         bool testDump = true,
         bool testTriage = false,
         bool testMini = false,
-        SOSRunner.DumpGenerator dumpGenerator = SOSRunner.DumpGenerator.CreateDump)
+        SOSRunner.DumpGenerator dumpGenerator = SOSRunner.DumpGenerator.CreateDump,
+        string dumpFileName = null)
     {
 
         Console.WriteLine($"Running SOS Test: {testName ?? scriptName} Debuggee: {debuggeeName} TestLive: {testLive} TestDump: {testDump} TestTriage: {testTriage} TestMini: {testMini} DumpGenerator: {dumpGenerator}");
@@ -158,6 +160,7 @@ public static class SOSTestHelpers
                 TestDump = testDump,
                 DebuggeeName = debuggeeName,
                 DumpGenerator = dumpGenerator,
+                DumpFileName = dumpFileName,
             },
             output);
 
@@ -382,6 +385,22 @@ public class SOS
             scriptName: "DivZero.script",
             Output,
             testTriage: true);
+    }
+
+    [SkippableTheory, MemberData(nameof(Configurations))]
+    public async Task DumpLongNameTruncation(TestConfiguration config)
+    {
+        if (config.PublishSingleFile)
+        {
+            await SOSTestHelpers.RunTest(
+                config,
+                debuggeeName: "DumpLongNameTruncation",
+                scriptName: "DumpLongNameTruncation.script",
+                Output,
+                testLive : false,
+                testTriage: false,
+                dumpFileName: "%d%e%d.dmp");
+        }
     }
 
     [SkippableTheory, MemberData(nameof(Configurations))]

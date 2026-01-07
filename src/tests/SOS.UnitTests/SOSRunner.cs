@@ -107,6 +107,7 @@ public class SOSRunner : IDisposable
         }
 
         public string DebuggeeName { get; set; }
+        public string DumpFileName { get; set; }
 
         public string DebuggeeArguments { get; set; }
 
@@ -217,7 +218,7 @@ public class SOSRunner : IDisposable
         DumpGenerator dumpGeneration = information.DumpGenerator;
         string dumpName = null;
 
-        Console.WriteLine($"Creating dump for {information.DebuggeeName} using {dumpGeneration}");
+        Console.WriteLine($"Creating dump for {information.DebuggeeName} using {dumpGeneration}, DotNetRoot {config.DotNetRoot}");
 
         Directory.CreateDirectory(information.DebuggeeDumpOutputRootDir);
 
@@ -321,6 +322,7 @@ public class SOSRunner : IDisposable
                 }
 
                 // Create the debuggee process runner
+                Console.WriteLine($"exePath={exePath}");
                 ProcessRunner processRunner = new ProcessRunner(exePath, ReplaceVariables(variables, arguments.ToString())).
                     WithEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0").
                     WithEnvironmentVariable("DOTNET_ROOT", config.DotNetRoot).
@@ -337,7 +339,7 @@ public class SOSRunner : IDisposable
 
                     if (information.DumpDiagnostics)
                     {
-                        processRunner.WithRuntimeConfiguration("CreateDumpDiagnostics", "1");
+                        processRunner.WithRuntimeConfiguration("CreateDumpDiagnostics", "0");
                     }
                     if (information.TestCrashReport)
                     {
@@ -350,6 +352,10 @@ public class SOSRunner : IDisposable
                     if (OS.Kind == OSKind.Windows && dumpType == DumpType.Triage)
                     {
                         dumpType = DumpType.Heap;
+                    }
+                    if (information.TestConfiguration.PublishSingleFile)
+                    {
+                        dumpType = DumpType.Full;
                     }
                     switch (dumpType)
                     {
@@ -485,9 +491,9 @@ public class SOSRunner : IDisposable
             // Make sure the dump file exists
             if (action is DebuggerAction.LoadDump or DebuggerAction.LoadDumpWithDotNetDump)
             {
-                if (!variables.TryGetValue("%DUMP_NAME%", out string dumpName) || !File.Exists(dumpName))
+                if (!variables.TryGetValue("%DUMP_NAME%", out string dumpName) || !File.Exists(dumpName.Replace("%e", information.DebuggeeName)))
                 {
-                    throw new FileNotFoundException($"Dump file does not exist: {dumpName ?? ""}");
+                    throw new FileNotFoundException($"Dump file does not exist: {dumpName} or {dumpName.Replace("%e", information.DebuggeeName) ?? ""}");
                 }
             }
 
@@ -1265,6 +1271,10 @@ public class SOSRunner : IDisposable
         string dumpRoot = action == DebuggerAction.GenerateDump ? information.DebuggeeDumpOutputRootDir : information.DebuggeeDumpInputRootDir;
         if (!string.IsNullOrEmpty(dumpRoot))
         {
+            if (information.DumpFileName != null)
+            {
+                return Path.Combine(dumpRoot, information.DumpFileName);
+            }
             StringBuilder sb = new();
             sb.Append(information.TestName);
             sb.Append('.');
