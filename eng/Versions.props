@@ -104,14 +104,14 @@
       <Runtime>$(MicrosoftNETCoreAppRefVersion)</Runtime>
       <AspNetDownload>$(MicrosoftAspNetCoreAppRefInternalVersion)</AspNetDownload>
       <AspNet>$(MicrosoftAspNetCoreAppRefVersion)</AspNet>
-      <TargetFramework>net10.0</TargetFramework>
+      <TargetFramework>net11.0</TargetFramework>
     </RuntimeTestVersions>
     <RuntimeTestVersions Include="Servicing2">
       <RuntimeDownload>$(MicrosoftNETCoreApp90Version)</RuntimeDownload>
       <Runtime>$(MicrosoftNETCoreApp90Version)</Runtime>
       <AspNetDownload>$(MicrosoftNETCoreApp90Version)</AspNetDownload>
       <AspNet>$(MicrosoftNETCoreApp90Version)</AspNet>
-      <TargetFramework>net9.0</TargetFramework>
+      <TargetFramework>net10.0</TargetFramework>
     </RuntimeTestVersions>
     <RuntimeTestVersions Include="Servicing3">
       <RuntimeDownload>$(MicrosoftNETCoreApp80Version)</RuntimeDownload>
@@ -128,7 +128,7 @@
       <Runtime>$(MicrosoftNETCoreAppRefVersion)</Runtime>
       <AspNetDownload>$(MicrosoftAspNetCoreAppRefInternalVersion)</AspNetDownload>
       <AspNet>$(MicrosoftAspNetCoreAppRefVersion)</AspNet>
-      <TargetFramework>net10.0</TargetFramework>
+      <TargetFramework>net11.0</TargetFramework>
     </RuntimeTestVersions>
   </ItemGroup>
   <!-- Internal service release testing -->
