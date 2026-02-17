@@ -27,7 +27,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             _serviceManager = new ServiceManager();
 
             // Register all the services and commands in the Microsoft.Diagnostics.DebugServices.Implementation assembly
-            _serviceManager.RegisterAssembly(typeof(Target).Assembly);
+            // using the source-generated registration (trim/AOT friendly)
+            _serviceManager.RegisterGeneratedServices(
+                Generated.MicrosoftDiagnosticsDebugServicesImplementation.ServiceRegistration.RegisterServices);
         }
 
         /// <summary>

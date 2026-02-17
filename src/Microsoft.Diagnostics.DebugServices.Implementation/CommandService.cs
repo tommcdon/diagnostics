@@ -270,6 +270,16 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         }
 
         /// <summary>
+        /// Registers commands using a source-generated registration method. This avoids reflection-based
+        /// assembly scanning, making the code trim and Native AOT friendly.
+        /// </summary>
+        /// <param name="registrar">generated registration action that accepts the AddCommands callback</param>
+        public void AddGeneratedCommands(Action<Action<Type, Func<IServiceProvider, object>>> registrar)
+        {
+            registrar(AddCommands);
+        }
+
+        /// <summary>
         /// This groups like commands that may have the same name as another group or the default one.
         /// </summary>
         private sealed class CommandGroup

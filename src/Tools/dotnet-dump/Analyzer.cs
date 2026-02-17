@@ -59,13 +59,22 @@ namespace Microsoft.Diagnostics.Tools.Dump
             }
 
             // Register all the services and commands in the dotnet-dump (this) assembly
-            ServiceManager.RegisterAssembly(typeof(Analyzer).Assembly);
+            // using the source-generated registration (trim/AOT friendly).
+            // Note: dotnet-dump only has commands, not service exports.
+            _commandService.AddGeneratedCommands(
+                Microsoft.Diagnostics.DebugServices.Generated.dotnetdump.ServiceRegistration.RegisterCommands);
 
             // Register all the services and commands in the SOS.Hosting assembly
-            ServiceManager.RegisterAssembly(typeof(SOSHost).Assembly);
+            ServiceManager.RegisterGeneratedServices(
+                Microsoft.Diagnostics.DebugServices.Generated.SOSHosting.ServiceRegistration.RegisterServices);
+            _commandService.AddGeneratedCommands(
+                Microsoft.Diagnostics.DebugServices.Generated.SOSHosting.ServiceRegistration.RegisterCommands);
 
             // Register all the services and commands in the Microsoft.Diagnostics.ExtensionCommands assembly
-            ServiceManager.RegisterAssembly(typeof(ClrMDHelper).Assembly);
+            ServiceManager.RegisterGeneratedServices(
+                Microsoft.Diagnostics.DebugServices.Generated.MicrosoftDiagnosticsExtensionCommands.ServiceRegistration.RegisterServices);
+            _commandService.AddGeneratedCommands(
+                Microsoft.Diagnostics.DebugServices.Generated.MicrosoftDiagnosticsExtensionCommands.ServiceRegistration.RegisterCommands);
 
             // Add the specially handled exit command
             _commandService.AddCommands(typeof(ExitCommand), (services) => new ExitCommand(_consoleService.Stop));

@@ -240,6 +240,20 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         public void FinalizeServices() => _finalized = true;
 
         /// <summary>
+        /// Registers services using a source-generated registration method. This avoids reflection-based
+        /// assembly scanning, making the code trim and Native AOT friendly.
+        /// </summary>
+        /// <param name="registrar">generated registration action that accepts the service and provider factory callbacks</param>
+        public void RegisterGeneratedServices(Action<Action<ServiceScope, Type, ServiceFactory>, Action<Type, ServiceFactory>> registrar)
+        {
+            if (_finalized)
+            {
+                throw new InvalidOperationException();
+            }
+            registrar(AddServiceFactory, AddProviderFactory);
+        }
+
+        /// <summary>
         /// Load any extra extensions in the search path
         /// </summary>
         public void LoadExtensions()

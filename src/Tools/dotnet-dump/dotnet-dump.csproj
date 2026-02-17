@@ -37,5 +37,9 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\Microsoft.SymbolStore\Microsoft.SymbolStore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\Microsoft.Diagnostics.DebugServices.SourceGeneration\Microsoft.Diagnostics.DebugServices.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" />
 </Project>

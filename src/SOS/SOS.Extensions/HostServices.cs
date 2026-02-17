@@ -208,13 +208,21 @@ namespace SOS.Extensions
                 DiagnosticLoggingService.Instance.SetConsole(consoleService, fileLoggingConsoleService);
 
                 // Register all the services and commands in the SOS.Extensions (this) assembly
-                _host.ServiceManager.RegisterAssembly(typeof(HostServices).Assembly);
+                // Note: SOS.Extensions has no ServiceExport or Command attributes, so no generated registration needed.
 
                 // Register all the services and commands in the SOS.Hosting assembly
-                _host.ServiceManager.RegisterAssembly(typeof(SOSHost).Assembly);
+                _host.ServiceManager.RegisterGeneratedServices(
+                    Microsoft.Diagnostics.DebugServices.Generated.SOSHosting.ServiceRegistration.RegisterServices);
 
                 // Register all the services and commands in the Microsoft.Diagnostics.ExtensionCommands assembly
-                _host.ServiceManager.RegisterAssembly(typeof(ClrMDHelper).Assembly);
+                _host.ServiceManager.RegisterGeneratedServices(
+                    Microsoft.Diagnostics.DebugServices.Generated.MicrosoftDiagnosticsExtensionCommands.ServiceRegistration.RegisterServices);
+
+                // Register generated commands from all assemblies (trim/AOT friendly)
+                _commandService.AddGeneratedCommands(
+                    Microsoft.Diagnostics.DebugServices.Generated.SOSHosting.ServiceRegistration.RegisterCommands);
+                _commandService.AddGeneratedCommands(
+                    Microsoft.Diagnostics.DebugServices.Generated.MicrosoftDiagnosticsExtensionCommands.ServiceRegistration.RegisterCommands);
 
                 // Display any extension assembly loads on console
                 _host.ServiceManager.NotifyExtensionLoad.Register((Assembly assembly) => fileLoggingConsoleService.WriteLine($"Loading extension {assembly.Location}"));

@@ -8,6 +8,7 @@
     <ProjectReference Include="SOS/*/*.csproj" />
 
     <ProjectReference Include="Microsoft.Diagnostics.DebugServices/Microsoft.Diagnostics.DebugServices.csproj" />
+    <ProjectReference Include="Microsoft.Diagnostics.DebugServices.SourceGeneration/Microsoft.Diagnostics.DebugServices.SourceGeneration.csproj" />
     <ProjectReference Include="Microsoft.Diagnostics.DebugServices.Implementation/Microsoft.Diagnostics.DebugServices.Implementation.csproj" />
     <ProjectReference Include="Microsoft.Diagnostics.ExtensionCommands/Microsoft.Diagnostics.ExtensionCommands.csproj" />
     <ProjectReference Include="Microsoft.Diagnostics.Monitoring/Microsoft.Diagnostics.Monitoring.csproj" />
