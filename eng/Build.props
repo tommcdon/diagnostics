@@ -1,5 +1,5 @@
 <Project>
-  <ItemGroup Condition="'$(BundleTools)' != 'true' and '$(DotNetBuild)' != 'true'">
+  <ItemGroup Condition="'$(BundleTools)' != 'true' and '$(DotNetBuild)' != 'true' and '$(NativeAotBuild)' != 'true'">
     <ProjectToBuild Include="$(RepoRoot)build.proj" />
   </ItemGroup>
 
@@ -10,5 +10,9 @@
 
   <ItemGroup Condition="'$(BundleTools)' == 'true'">
     <ProjectToBuild Include="$(RepoRoot)src/singlefile-tools.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NativeAotBuild)' == 'true'">
+    <ProjectToBuild Include="$(RepoRoot)src/nativeaot-tools.proj" />
   </ItemGroup>
 </Project>

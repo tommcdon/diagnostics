@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppMinTargetFramework)</TargetFramework>
+    <!--
+        Default to the current machine's RID for Native AOT.
+        Override with /p:NativeAotRids=win-x64;linux-x64 to build for multiple RIDs.
+    -->
+    <NativeAotRids Condition="'$(NativeAotRids)' == ''">$(TargetRid)</NativeAotRids>
+    <NativeAotOutputDirectory>$(ArtifactsBinDir)dotnet-dump-aot\$(Configuration)\</NativeAotOutputDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeAotRid Include="$(NativeAotRids)" />
+  </ItemGroup>
+
+  <!--
+      Build and publish dotnet-dump as a Native AOT binary for each specified RID.
+      This runs after the normal managed build so native SOS components are available.
+  -->
+  <Target Name="PublishNativeAot" AfterTargets="Build">
+    <ItemGroup>
+      <_DotnetDumpAotProject Include="$(RepoRoot)src/Tools/dotnet-dump/dotnet-dump.csproj">
+        <AdditionalProperties>Configuration=$(Configuration);NativeAotBuild=true;RuntimeIdentifier=%(NativeAotRid.Identity);SelfContained=true</AdditionalProperties>
+      </_DotnetDumpAotProject>
+    </ItemGroup>
+
+    <!-- Restore with AOT properties -->
+    <MSBuild Projects="@(_DotnetDumpAotProject)"
+        BuildInParallel="false"
+        SkipNonexistentProjects="false"
+        StopOnFirstFailure="true"
+        Targets="Restore"
+        ContinueOnError="false"
+        Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+
+    <!-- Publish (which includes ILC native compilation) -->
+    <MSBuild Projects="@(_DotnetDumpAotProject)"
+        BuildInParallel="false"
+        SkipNonexistentProjects="false"
+        StopOnFirstFailure="true"
+        Targets="Publish"
+        ContinueOnError="false" />
+
+    <Message Importance="High" Text="Native AOT dotnet-dump published for %(NativeAotRid.Identity)" />
+  </Target>
+
+</Project>

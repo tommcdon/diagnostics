@@ -11,6 +11,7 @@ Param(
     [switch] $skipmanaged,
     [switch] $skipnative,
     [switch] $bundletools,
+    [switch] $nativeaot,
     [switch] $useCdac,
     [string] $methodfilter = '',
     [string] $classfilter = '',
@@ -56,6 +57,13 @@ if ($bundletools) {
     $remainingargs = '/bl:"$logdir\BundleTools.binlog" ' + $remainingargs
     $remainingargs = '-noBl ' + $remainingargs
     $skipnative = $True
+    $test = $False
+}
+
+if ($nativeaot) {
+    $remainingargs = "/p:NativeAotBuild=true " + $remainingargs
+    $remainingargs = '/bl:"$logdir\NativeAotBuild.binlog" ' + $remainingargs
+    $remainingargs = '-noBl ' + $remainingargs
     $test = $False
 }
 

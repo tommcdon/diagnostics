@@ -21,6 +21,7 @@
         These cannot be resolved without major architectural changes to the library code.
     -->
     <NoWarn Condition="'$(NativeAotBuild)' == 'true'">$(NoWarn);IL2026;IL2070;IL2072;IL2092;IL2111;IL3050;IL3000</NoWarn>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

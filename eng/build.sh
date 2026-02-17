@@ -27,6 +27,7 @@ __RuntimeSourceFeedKey=
 __SkipConfigure=0
 __SkipGenerateVersion=0
 __InstallRuntimes=0
+__NativeAotBuild=0
 __PrivateBuild=0
 __Test=0
 __TestFilter=
@@ -36,6 +37,7 @@ __LiveRuntimeDir=
 
 usage_list+=("-skipmanaged: do not build managed components.")
 usage_list+=("-skipnative: do not build native components.")
+usage_list+=("-nativeaot: build Native AOT version of dotnet-dump.")
 usage_list+=("-test: run xunit tests")
 usage_list+=("-methodfilter: pass method filter to xunit runner (Namespace.ClassName.MethodName)")
 usage_list+=("-classfilter: pass class filter to xunit runner (Namespace.ClassName)")
@@ -98,6 +100,10 @@ handle_arguments() {
 
         installruntimes|-installruntimes)
             __InstallRuntimes=1
+            ;;
+
+        nativeaot|-nativeaot)
+            __NativeAotBuild=1
             ;;
 
         privatebuild|-privatebuild)
@@ -227,6 +233,11 @@ fi
 #
 # Managed build
 #
+
+if [[ "$__NativeAotBuild" == 1 ]]; then
+    __ManagedBuildArgs="$__ManagedBuildArgs /p:NativeAotBuild=true"
+    __Test=0
+fi
 
 if [[ "$__ManagedBuild" == 1 ]]; then
 
