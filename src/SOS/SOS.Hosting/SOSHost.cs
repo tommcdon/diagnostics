@@ -40,19 +40,19 @@ namespace SOS.Hosting {
 
 #pragma warning disable CS0649
         [ServiceImport]
-        internal readonly IConsoleService ConsoleService;
+        internal IConsoleService ConsoleService;
 
         [ServiceImport]
-        internal readonly IContextService ContextService;
+        internal IContextService ContextService;
 
         [ServiceImport]
-        internal readonly IModuleService ModuleService;
+        internal IModuleService ModuleService;
 
         [ServiceImport]
-        internal readonly IThreadService ThreadService;
+        internal IThreadService ThreadService;
 
         [ServiceImport]
-        private readonly SOSLibrary _sosLibrary;
+        internal SOSLibrary SosLibrary;
 #pragma warning restore
 
         private readonly IntPtr _client;
@@ -99,14 +99,14 @@ namespace SOS.Hosting {
         /// </summary>
         /// <param name="command">just the command name</param>
         /// <param name="arguments">the command arguments and options</param>
-        public void ExecuteCommand(string command, string arguments) => _sosLibrary.ExecuteCommand(_client, command, arguments);
+        public void ExecuteCommand(string command, string arguments) => SosLibrary.ExecuteCommand(_client, command, arguments);
 
         /// <summary>
         /// Get the detailed help text for a native SOS command.
         /// </summary>
         /// <param name="command">command name</param>
         /// <returns>help text or null if not found or error</returns>
-        public string GetHelpText(string command) => _sosLibrary.GetHelpText(command);
+        public string GetHelpText(string command) => SosLibrary.GetHelpText(command);
 
         #region Reverse PInvoke Implementations
 

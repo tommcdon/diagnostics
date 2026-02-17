@@ -22,13 +22,13 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         private IEnumerable<ModuleInfo> _modules;
 
         [ServiceImport]
-        private IModuleService ModuleService { get; set; }
+        internal IModuleService ModuleService { get; set; }
 
         [ServiceImport]
-        private IMemoryService MemoryService { get; set; }
+        internal IMemoryService MemoryService { get; set; }
 
         [ServiceImport]
-        private IThreadService ThreadService { get; set; }
+        internal IThreadService ThreadService { get; set; }
 
         public DataReader(ITarget target)
         {

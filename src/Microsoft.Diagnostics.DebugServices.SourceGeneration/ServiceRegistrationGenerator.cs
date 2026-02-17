@@ -339,22 +339,21 @@ namespace Microsoft.Diagnostics.DebugServices.SourceGeneration
                                     }
                                 }
 
-                                // Only include fields that we can actually set from generated code
-                                // (public or internal within the same assembly, and not readonly)
-                                bool canAccess = field.DeclaredAccessibility == Accessibility.Public ||
-                                                 field.DeclaredAccessibility == Accessibility.Internal;
-                                if (canAccess)
+                                // Include all fields regardless of accessibility
+                                // Public/internal non-readonly fields can be set directly; others need reflection
+                                bool canSetDirectly = (field.DeclaredAccessibility == Accessibility.Public ||
+                                                       field.DeclaredAccessibility == Accessibility.Internal) &&
+                                                      !field.IsReadOnly;
+                                result.Add(new ImportMemberInfo
                                 {
-                                    result.Add(new ImportMemberInfo
-                                    {
-                                        MemberName = field.Name,
-                                        TypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                        Optional = optional,
-                                        IsReadOnly = field.IsReadOnly,
-                                        DeclaringTypeName = field.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                        Kind = ImportMemberKind.Field
-                                    });
-                                }
+                                    MemberName = field.Name,
+                                    TypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Optional = optional,
+                                    IsReadOnly = field.IsReadOnly,
+                                    NeedsReflection = !canSetDirectly,
+                                    DeclaringTypeName = field.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Kind = ImportMemberKind.Field
+                                });
                             }
                         }
                     }
@@ -373,18 +372,19 @@ namespace Microsoft.Diagnostics.DebugServices.SourceGeneration
                                     }
                                 }
 
-                                bool canAccess = prop.SetMethod.DeclaredAccessibility == Accessibility.Public ||
-                                                 prop.SetMethod.DeclaredAccessibility == Accessibility.Internal;
-                                if (canAccess)
+                                // Include all properties regardless of accessibility
+                                // Public/internal setters can be set directly; others need reflection
+                                bool canSetDirectly = prop.SetMethod.DeclaredAccessibility == Accessibility.Public ||
+                                                      prop.SetMethod.DeclaredAccessibility == Accessibility.Internal;
+                                result.Add(new ImportMemberInfo
                                 {
-                                    result.Add(new ImportMemberInfo
-                                    {
-                                        MemberName = prop.Name,
-                                        TypeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                        Optional = optional,
-                                        Kind = ImportMemberKind.Property
-                                    });
-                                }
+                                    MemberName = prop.Name,
+                                    TypeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Optional = optional,
+                                    NeedsReflection = !canSetDirectly,
+                                    DeclaringTypeName = prop.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Kind = ImportMemberKind.Property
+                                });
                             }
                         }
                     }
@@ -662,7 +662,7 @@ namespace Microsoft.Diagnostics.DebugServices.SourceGeneration
 
         private static void GenerateImportMemberAssignments(StringBuilder sb, string varName, List<ImportMemberInfo> members)
         {
-            bool needsReflection = members.Any(m => m.IsReadOnly);
+            bool needsReflection = members.Any(m => m.NeedsReflection);
             if (needsReflection)
             {
                 sb.AppendLine("            System.Reflection.BindingFlags bindingFlags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;");
@@ -684,10 +684,17 @@ namespace Microsoft.Diagnostics.DebugServices.SourceGeneration
                     }
                     sb.AppendLine(");");
                 }
-                else if (member.IsReadOnly)
+                else if (member.NeedsReflection)
                 {
-                    // Use reflection to set readonly fields (these are set via FieldInfo.SetValue in the original code)
-                    sb.AppendLine($"            typeof({member.DeclaringTypeName}).GetField(\"{member.MemberName}\", bindingFlags)?.SetValue({varName}, services.GetService(typeof({member.TypeName})));");
+                    // Use reflection for private/protected/readonly members
+                    if (member.Kind == ImportMemberKind.Field)
+                    {
+                        sb.AppendLine($"            typeof({member.DeclaringTypeName}).GetField(\"{member.MemberName}\", bindingFlags)?.SetValue({varName}, services.GetService(typeof({member.TypeName})));");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"            typeof({member.DeclaringTypeName}).GetProperty(\"{member.MemberName}\", bindingFlags)?.SetValue({varName}, services.GetService(typeof({member.TypeName})));");
+                    }
                 }
                 else
                 {
@@ -741,6 +748,7 @@ namespace Microsoft.Diagnostics.DebugServices.SourceGeneration
             public string TypeName { get; set; }
             public bool Optional { get; set; }
             public bool IsReadOnly { get; set; }
+            public bool NeedsReflection { get; set; }
             public string DeclaringTypeName { get; set; }
             public ImportMemberKind Kind { get; set; }
             public List<ParameterInfo> MethodParameters { get; set; }
