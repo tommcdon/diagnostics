@@ -178,7 +178,14 @@ namespace Microsoft.FileFormats
             PackAttribute pack = typeInfo.GetCustomAttributes().Where(attr => attr is PackAttribute).Cast<PackAttribute>().SingleOrDefault();
 
             FieldInfo[] reflectionFields = typeInfo.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            reflectionFields = reflectionFields.OrderBy(f => f.MetadataToken).ToArray();
+            try
+            {
+                reflectionFields = reflectionFields.OrderBy(f => f.MetadataToken).ToArray();
+            }
+            catch (InvalidOperationException)
+            {
+                // MetadataToken is not available in NativeAOT; fall back to reflection order
+            }
             reflectionFields = reflectionFields.Where(f => !f.DeclaringType.Equals(typeof(TStruct))).ToArray();
             reflectionFields = reflectionFields.Where(f => IsFieldIncludedInDefines(f, enabledDefines)).ToArray();
             TField[] tFields = new TField[reflectionFields.Length];
