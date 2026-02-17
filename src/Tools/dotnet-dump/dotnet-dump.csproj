@@ -58,12 +58,27 @@
       For Native AOT publish, PackAsTool is false so the default CopyToPublishDirectory in
       sos-packaging.props doesn't apply. Copy the SOS native binaries for the target RID
       to the publish directory if they exist (requires a prior native build).
+      Falls back to the other configuration (Debug/Release) if the matching config isn't available.
   -->
   <Target Name="_CopyNativeSosForAot"
           AfterTargets="Publish"
           Condition="'$(PublishAot)' == 'true'">
+    <PropertyGroup>
+      <_SosFallbackConfig Condition="'$(Configuration)' == 'Release'">Debug</_SosFallbackConfig>
+      <_SosFallbackConfig Condition="'$(Configuration)' == 'Debug'">Release</_SosFallbackConfig>
+    </PropertyGroup>
     <ItemGroup>
       <_SosNativeForRid Include="@(SosRequiredBinaries)" Condition="'%(TargetRid)' == '$(RuntimeIdentifier)' and Exists('%(FullPath)')" />
+    </ItemGroup>
+    <!-- If no binaries found for the current configuration, try the other configuration as fallback -->
+    <ItemGroup Condition="'@(_SosNativeForRid)' == '' and '$(_SosFallbackConfig)' != ''">
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)Windows_NT.x64.$(_SosFallbackConfig)\sos.dll" TargetRid="win-x64" Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)Windows_NT.x64.$(_SosFallbackConfig)\Microsoft.DiaSymReader.Native.amd64.dll" TargetRid="win-x64" Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)linux.x64.$(_SosFallbackConfig)\libsos.so" TargetRid="linux-x64" Condition="'$(RuntimeIdentifier)' == 'linux-x64'" />
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)linux.arm64.$(_SosFallbackConfig)\libsos.so" TargetRid="linux-arm64" Condition="'$(RuntimeIdentifier)' == 'linux-arm64'" />
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)osx.x64.$(_SosFallbackConfig)\libsos.dylib" TargetRid="osx-x64" Condition="'$(RuntimeIdentifier)' == 'osx-x64'" />
+      <_SosFallbackBinaries Include="$(ArtifactsBinDir)osx.arm64.$(_SosFallbackConfig)\libsos.dylib" TargetRid="osx-arm64" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'" />
+      <_SosNativeForRid Include="@(_SosFallbackBinaries)" Condition="Exists('%(FullPath)')" />
     </ItemGroup>
     <Copy SourceFiles="@(_SosNativeForRid)"
           DestinationFolder="$(PublishDir)%(TargetRid)"
