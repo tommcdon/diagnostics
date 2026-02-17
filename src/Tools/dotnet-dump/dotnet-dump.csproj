@@ -69,7 +69,7 @@
           DestinationFolder="$(PublishDir)%(TargetRid)"
           SkipUnchangedFiles="true"
           Condition="'@(_SosNativeForRid)' != ''" />
-    <Warning Text="SOS native binaries for $(RuntimeIdentifier) not found. Run a full build (Build.cmd) first to produce native components."
+    <Message Importance="High" Text="WARNING: SOS native binaries for $(RuntimeIdentifier) not found. Run a full build (Build.cmd) first to produce native components."
              Condition="'@(_SosNativeForRid)' == ''" />
   </Target>
 </Project>

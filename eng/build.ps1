@@ -62,8 +62,7 @@ if ($bundletools) {
 
 if ($nativeaot) {
     $remainingargs = "/p:NativeAotBuild=true " + $remainingargs
-    $remainingargs = '/bl:"$logdir\NativeAotBuild.binlog" ' + $remainingargs
-    $remainingargs = '-noBl ' + $remainingargs
+    $skipnative = $True
     $test = $False
 }
 
