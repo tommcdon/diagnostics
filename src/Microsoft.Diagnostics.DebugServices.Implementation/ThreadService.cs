@@ -131,9 +131,34 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation {
             return contextType.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
-#pragma warning disable IL3050 // Marshal.SizeOf(Type) requires dynamic code but register context field types are known primitives
-        private static int GetFieldSize(FieldInfo field) => Marshal.SizeOf(field.FieldType);
+        /// <summary>
+        /// Returns the size of a register context field without using Marshal.SizeOf(Type),
+        /// which requires dynamic code generation that is unavailable in Native AOT.
+        /// </summary>
+        private static int GetFieldSize(FieldInfo field)
+        {
+            Type type = field.FieldType;
+            if (type == typeof(byte) || type == typeof(sbyte))
+            {
+                return 1;
+            }
+            if (type == typeof(short) || type == typeof(ushort))
+            {
+                return 2;
+            }
+            if (type == typeof(int) || type == typeof(uint) || type == typeof(float))
+            {
+                return 4;
+            }
+            if (type == typeof(long) || type == typeof(ulong) || type == typeof(double))
+            {
+                return 8;
+            }
+            // Fallback for fixed buffers and other struct-sized fields
+#pragma warning disable IL3050 // Marshal.SizeOf(Type) requires dynamic code
+            return Marshal.SizeOf(type);
 #pragma warning restore IL3050
+        }
 
         void IDisposable.Dispose() => Flush();
 
