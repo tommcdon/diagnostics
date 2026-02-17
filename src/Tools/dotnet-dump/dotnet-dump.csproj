@@ -65,17 +65,18 @@
       Also copy sosdocs.txt for help text (FindResource not available with static linking).
   -->
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
-    <_SosStaticLibConfig>$(Configuration)</_SosStaticLibConfig>
+    <!-- Always use Release native libs for AOT: NativeAOT links against release CRT,
+         which is incompatible with debug CRT used in Debug native builds -->
+    <_SosStaticLibConfig>Release</_SosStaticLibConfig>
   </PropertyGroup>
   <!-- Determine the native build output directories -->
   <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(RuntimeIdentifier)' == 'win-x64'">
     <_SosNativeBinDir>$(ArtifactsBinDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeBinDir>
     <_SosNativeObjDir>$(ArtifactsObjDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeObjDir>
   </PropertyGroup>
-  <!-- Fallback to other configuration if primary doesn't exist -->
+  <!-- Fallback to Debug native build if Release isn't available -->
   <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(_SosNativeBinDir)' != '' and !Exists('$(_SosNativeBinDir)\sos_static.lib')">
-    <_SosStaticLibConfig Condition="'$(Configuration)' == 'Release'">Debug</_SosStaticLibConfig>
-    <_SosStaticLibConfig Condition="'$(Configuration)' == 'Debug'">Release</_SosStaticLibConfig>
+    <_SosStaticLibConfig>Debug</_SosStaticLibConfig>
     <_SosNativeBinDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">$(ArtifactsBinDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeBinDir>
     <_SosNativeObjDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">$(ArtifactsObjDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeObjDir>
   </PropertyGroup>
