@@ -8,6 +8,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -230,14 +231,17 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// Add the commands and aliases attributes found in the type.
         /// </summary>
         /// <param name="type">Command type to search</param>
-        public void AddCommands(Type type) => AddCommands(type, factory: null);
+        public void AddCommands(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type) => AddCommands(type, factory: null);
 
         /// <summary>
         /// Add the commands and aliases attributes found in the type.
         /// </summary>
         /// <param name="type">Command type to search</param>
         /// <param name="factory">function to create command instance</param>
-        public void AddCommands(Type type, Func<IServiceProvider, object> factory)
+        public void AddCommands(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            Func<IServiceProvider, object> factory)
         {
             if (type.IsClass)
             {
@@ -390,7 +394,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             /// <param name="type">Command type to search</param>
             /// <param name="commandAttribute">command attribute</param>
             /// <param name="factory">function to create command instance</param>
-            internal void CreateCommand(Type type, CommandAttribute commandAttribute, Func<IServiceProvider, object> factory)
+            internal void CreateCommand(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+                CommandAttribute commandAttribute,
+                Func<IServiceProvider, object> factory)
             {
                 Command command = new(commandAttribute.Name, commandAttribute.Help);
                 List<(PropertyInfo, Argument)> arguments = new();
@@ -408,9 +415,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                     {
                         ArgumentArity arity = property.PropertyType.IsArray ? ArgumentArity.ZeroOrMore : ArgumentArity.ZeroOrOne;
 
-                        Argument argument = (Argument)typeof(Argument<>).MakeGenericType(property.PropertyType)
-                            .GetConstructor([typeof(string)])
-                            .Invoke([argumentAttribute.Name ?? property.Name.ToLowerInvariant()]);
+                        Argument argument = CreateTypedArgument(property.PropertyType, argumentAttribute.Name ?? property.Name.ToLowerInvariant());
 
                         argument.Description = argumentAttribute.Help;
                         argument.Arity = arity;
@@ -423,9 +428,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                         OptionAttribute optionAttribute = (OptionAttribute)property.GetCustomAttributes(typeof(OptionAttribute), inherit: false).SingleOrDefault();
                         if (optionAttribute != null)
                         {
-                            Option option = (Option)typeof(Option<>).MakeGenericType(property.PropertyType)
-                                .GetConstructor([typeof(string), typeof(string[])])
-                                .Invoke([optionAttribute.Name ?? BuildOptionAlias(property.Name), optionAttribute.Aliases]);
+                            Option option = CreateTypedOption(property.PropertyType, optionAttribute.Name ?? BuildOptionAlias(property.Name), optionAttribute.Aliases);
 
                             option.Description = optionAttribute.Help;
 
@@ -494,7 +497,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 CommandAttribute commandAttribute,
                 IEnumerable<(PropertyInfo, Argument)> arguments,
                 IEnumerable<(PropertyInfo, Option)> options,
-                Type type,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type,
                 Func<IServiceProvider, object> factory)
             {
                 _commandAttribute = commandAttribute;
@@ -727,6 +730,102 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                     argument.Property.SetValue(instance, array != null ? array.ToArray() : value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates a typed Argument instance without using MakeGenericType (AOT-compatible).
+        /// </summary>
+        private static Argument CreateTypedArgument(Type propertyType, string name)
+        {
+            if (propertyType == typeof(string))
+            {
+                return new Argument<string>(name);
+            }
+            if (propertyType == typeof(string[]))
+            {
+                return new Argument<string[]>(name);
+            }
+            if (propertyType == typeof(bool))
+            {
+                return new Argument<bool>(name);
+            }
+            if (propertyType == typeof(int))
+            {
+                return new Argument<int>(name);
+            }
+            if (propertyType == typeof(int?))
+            {
+                return new Argument<int?>(name);
+            }
+            if (propertyType == typeof(uint))
+            {
+                return new Argument<uint>(name);
+            }
+            if (propertyType == typeof(uint?))
+            {
+                return new Argument<uint?>(name);
+            }
+            if (propertyType == typeof(ulong))
+            {
+                return new Argument<ulong>(name);
+            }
+            if (propertyType == typeof(ulong?))
+            {
+                return new Argument<ulong?>(name);
+            }
+            if (propertyType.IsEnum)
+            {
+                return new Argument<string>(name);
+            }
+            throw new NotSupportedException($"Unsupported command argument type: {propertyType}. Add support in CommandService.CreateTypedArgument.");
+        }
+
+        /// <summary>
+        /// Creates a typed Option instance without using MakeGenericType (AOT-compatible).
+        /// </summary>
+        private static Option CreateTypedOption(Type propertyType, string name, string[] aliases)
+        {
+            if (propertyType == typeof(string))
+            {
+                return new Option<string>(name, aliases);
+            }
+            if (propertyType == typeof(string[]))
+            {
+                return new Option<string[]>(name, aliases);
+            }
+            if (propertyType == typeof(bool))
+            {
+                return new Option<bool>(name, aliases);
+            }
+            if (propertyType == typeof(int))
+            {
+                return new Option<int>(name, aliases);
+            }
+            if (propertyType == typeof(int?))
+            {
+                return new Option<int?>(name, aliases);
+            }
+            if (propertyType == typeof(uint))
+            {
+                return new Option<uint>(name, aliases);
+            }
+            if (propertyType == typeof(uint?))
+            {
+                return new Option<uint?>(name, aliases);
+            }
+            if (propertyType == typeof(ulong))
+            {
+                return new Option<ulong>(name, aliases);
+            }
+            if (propertyType == typeof(ulong?))
+            {
+                return new Option<ulong?>(name, aliases);
+            }
+            if (propertyType.IsEnum)
+            {
+                return new Option<string>(name, aliases);
+            }
+            throw new NotSupportedException($"Unsupported command option type: {propertyType}. Add support in CommandService.CreateTypedOption.");
         }
 
         internal sealed class ConsoleServiceWrapper : TextWriter

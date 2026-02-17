@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -80,11 +81,15 @@ namespace Microsoft.Diagnostics.Tools.Dump
             _commandService.AddCommands(typeof(ExitCommand), (services) => new ExitCommand(_consoleService.Stop));
 
             // Display any extension assembly loads on console
+#pragma warning disable IL3000 // Assembly.Location may be empty in single-file apps
             ServiceManager.NotifyExtensionLoad.Register((Assembly assembly) => _fileLoggingConsoleService.WriteLine($"Loading extension {assembly.Location}"));
+#pragma warning restore IL3000
             ServiceManager.NotifyExtensionLoadFailure.Register((Exception ex) => _fileLoggingConsoleService.WriteLine(ex.Message));
 
             // Load any extra extensions
+#pragma warning disable IL2026 // Extension loading is intentional and only used for dynamically discovered plugins
             ServiceManager.LoadExtensions();
+#pragma warning restore IL2026
 
             // Loading extensions or adding service factories not allowed after this point.
             ServiceContainer serviceContainer = CreateServiceContainer();

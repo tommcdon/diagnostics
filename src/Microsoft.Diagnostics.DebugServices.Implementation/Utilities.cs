@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -299,6 +300,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// <param name="type">type to create</param>
         /// <param name="provider">service provider</param>
         /// <returns>new instance</returns>
+        [RequiresUnreferencedCode("Uses reflection to discover constructors and service imports. Use source-generated factories for trim/AOT compatibility.")]
         public static object CreateInstance(Type type, IServiceProvider provider)
         {
             object instance = InvokeConstructor(type, provider);
@@ -315,6 +317,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// <param name="method">static method (constructor) to use to create instance</param>
         /// <param name="provider">service provider</param>
         /// <returns>new instance</returns>
+        [RequiresUnreferencedCode("Uses reflection to invoke methods and discover service imports. Use source-generated factories for trim/AOT compatibility.")]
         public static object CreateInstance(MethodBase method, IServiceProvider provider)
         {
             object instance = Invoke(method, null, provider);
@@ -330,6 +333,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// </summary>
         /// <param name="instance">object instance to process</param>
         /// <param name="provider">service provider</param>
+        [RequiresUnreferencedCode("Uses reflection to discover fields, properties, and methods with ServiceImportAttribute. Use source-generated registration for trim/AOT compatibility.")]
         public static void ImportServices(object instance, IServiceProvider provider)
         {
             if (instance == null)
@@ -390,6 +394,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// <param name="type">type to create</param>
         /// <param name="provider">services</param>
         /// <returns>type instance</returns>
+        [RequiresUnreferencedCode("Uses reflection to discover constructors. Use source-generated factories for trim/AOT compatibility.")]
         public static object InvokeConstructor(Type type, IServiceProvider provider)
         {
             ConstructorInfo constructor = type.GetConstructors().Single();

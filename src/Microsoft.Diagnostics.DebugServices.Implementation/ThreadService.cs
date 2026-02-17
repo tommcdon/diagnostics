@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -79,7 +80,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation {
             List<RegisterInfo> registers = new();
             int index = 0;
 
-            FieldInfo[] fields = contextType.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] fields = GetContextFields(contextType);
             foreach (FieldInfo field in fields)
             {
                 FieldOffsetAttribute offsetAttribute = field.GetCustomAttributes<FieldOffsetAttribute>(inherit: false).Single();
@@ -122,6 +123,12 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation {
             _lookupByName = registers.ToDictionary((info) => info.RegisterName);
             _lookupByIndex = registers.ToDictionary((info) => info.RegisterIndex);
             Registers = registers;
+        }
+
+        private static FieldInfo[] GetContextFields(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type contextType)
+        {
+            return contextType.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         void IDisposable.Dispose() => Flush();

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -100,6 +101,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// <param name="assembly">service implementation assembly</param>
         /// <exception cref="FileNotFoundException">assembly or reference not found</exception>
         /// <exception cref="NotSupportedException">not supported</exception>
+        [RequiresUnreferencedCode("Uses reflection to discover exported types. Use RegisterGeneratedServices for trim/AOT compatibility.")]
         public void RegisterExportedServices(Assembly assembly)
         {
             foreach (Type serviceType in assembly.GetExportedTypes())
@@ -115,6 +117,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// Finds all the ServiceExport attributes in the type and registers.
         /// </summary>
         /// <param name="serviceType">service implementation type</param>
+        [RequiresUnreferencedCode("Uses reflection to discover service exports and create instances. Use RegisterGeneratedServices for trim/AOT compatibility.")]
         public void RegisterExportedServices(Type serviceType)
         {
             if (_finalized)
@@ -162,6 +165,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// Register the exported services in the assembly and notify the assembly has loaded.
         /// </summary>
         /// <param name="assembly">extension assembly</param>
+        [RequiresUnreferencedCode("Uses reflection to discover exported services. Use RegisterGeneratedServices for trim/AOT compatibility.")]
         public void RegisterAssembly(Assembly assembly)
         {
             if (_finalized)
@@ -256,6 +260,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// <summary>
         /// Load any extra extensions in the search path
         /// </summary>
+        [RequiresUnreferencedCode("Dynamically loads extension assemblies. Extension loading is not supported in trimmed/AOT applications.")]
         public void LoadExtensions()
         {
             if (_finalized)
@@ -270,9 +275,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 extensionPaths.AddRange(paths);
             }
             string assemblyPath = Assembly.GetExecutingAssembly().Location;
-            if (!string.IsNullOrEmpty(assemblyPath))
+            string baseDir = !string.IsNullOrEmpty(assemblyPath) ? Path.GetDirectoryName(assemblyPath) : AppContext.BaseDirectory;
+            if (!string.IsNullOrEmpty(baseDir))
             {
-                string searchPath = Path.Combine(Path.GetDirectoryName(assemblyPath), "extensions");
+                string searchPath = Path.Combine(baseDir, "extensions");
                 if (Directory.Exists(searchPath))
                 {
                     try
@@ -301,6 +307,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// Load extension from the path
         /// </summary>
         /// <param name="extensionPath">extension assembly path</param>
+        [RequiresUnreferencedCode("Dynamically loads extension assemblies. Extension loading is not supported in trimmed/AOT applications.")]
         public void LoadExtension(string extensionPath)
         {
             if (_finalized)
@@ -378,7 +385,17 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 "SOS.InstallHelper"
             };
 
-            private static readonly string _defaultAssembliesPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            private static readonly string _defaultAssembliesPath = GetDefaultAssembliesPath();
+
+            private static string GetDefaultAssembliesPath()
+            {
+                string location = Assembly.GetExecutingAssembly().Location;
+                if (!string.IsNullOrEmpty(location))
+                {
+                    return Path.GetDirectoryName(location);
+                }
+                return AppContext.BaseDirectory;
+            }
 
             private readonly string _extensionPath;
             private Dictionary<string, string> _extensionPaths;

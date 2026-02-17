@@ -13,7 +13,17 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
     /// </summary>
     public static class AssemblyResolver
     {
-        private static readonly string _defaultAssembliesPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        private static readonly string _defaultAssembliesPath = GetDefaultAssembliesPath();
+
+        private static string GetDefaultAssembliesPath()
+        {
+            string location = Assembly.GetExecutingAssembly().Location;
+            if (!string.IsNullOrEmpty(location))
+            {
+                return Path.GetDirectoryName(location);
+            }
+            return AppContext.BaseDirectory;
+        }
         private static bool _initialized;
 
         /// <summary>
