@@ -37,6 +37,12 @@ namespace Microsoft.Diagnostics.Tools.Dump
 
             _commandService = new CommandService();
 
+            // In Native AOT, SOS is statically linked — use P/Invoke instead of LoadLibrary
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                SOSLibrary.UseStaticLinking = true;
+            }
+
             // Only register reflection-based command discovery for dynamic extensions
             // when running with a managed runtime (JIT). In AOT, extensions can't be loaded.
             if (RuntimeFeature.IsDynamicCodeSupported)

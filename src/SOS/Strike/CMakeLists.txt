@@ -250,6 +250,11 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(sos ${SOS_LIBRARY})
 
+# Static library for Native AOT static linking
+add_library_clr(sos_static STATIC ${SOS_SOURCES})
+target_link_libraries(sos_static ${SOS_LIBRARY})
+install_clr(TARGETS sos_static DESTINATIONS .)
+
 # add the install targets
 install_clr(TARGETS sos DESTINATIONS .)
 

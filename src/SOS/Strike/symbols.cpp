@@ -82,6 +82,268 @@ extern "C" void STDMETHODCALLTYPE SOSUninitializeByHost()
 }
 
 /**********************************************************************\
+ * Dispatches a SOS command by name. Used for static linking where
+ * GetProcAddress is not available.
+\**********************************************************************/
+
+// Forward declarations for commands (defined via DECLARE_API in other files)
+#define SOS_COMMAND_ENTRY(name) extern "C" HRESULT CALLBACK name(PDEBUG_CLIENT client, PCSTR args);
+
+// strike.cpp commands
+SOS_COMMAND_ENTRY(IP2MD)
+SOS_COMMAND_ENTRY(DumpStack)
+SOS_COMMAND_ENTRY(DumpMD)
+SOS_COMMAND_ENTRY(DumpIL)
+SOS_COMMAND_ENTRY(DumpSig)
+SOS_COMMAND_ENTRY(DumpSigElem)
+SOS_COMMAND_ENTRY(DumpClass)
+SOS_COMMAND_ENTRY(DumpMT)
+SOS_COMMAND_ENTRY(DumpArray)
+SOS_COMMAND_ENTRY(DumpObj)
+SOS_COMMAND_ENTRY(DumpALC)
+SOS_COMMAND_ENTRY(DumpDelegate)
+SOS_COMMAND_ENTRY(PrintException)
+SOS_COMMAND_ENTRY(DumpVC)
+SOS_COMMAND_ENTRY(SyncBlk)
+SOS_COMMAND_ENTRY(DumpModule)
+SOS_COMMAND_ENTRY(DumpDomain)
+SOS_COMMAND_ENTRY(DumpAssembly)
+SOS_COMMAND_ENTRY(ThreadState)
+SOS_COMMAND_ENTRY(Threads)
+SOS_COMMAND_ENTRY(WatsonBuckets)
+SOS_COMMAND_ENTRY(SOSHandleCLRN)
+SOS_COMMAND_ENTRY(bpmd)
+SOS_COMMAND_ENTRY(FindAppDomain)
+SOS_COMMAND_ENTRY(EHInfo)
+SOS_COMMAND_ENTRY(GCInfo)
+SOS_COMMAND_ENTRY(u)
+SOS_COMMAND_ENTRY(DumpLog)
+SOS_COMMAND_ENTRY(DumpGCData)
+SOS_COMMAND_ENTRY(EEVersion)
+SOS_COMMAND_ENTRY(SOSStatus)
+SOS_COMMAND_ENTRY(Token2EE)
+SOS_COMMAND_ENTRY(Name2EE)
+SOS_COMMAND_ENTRY(FindRoots)
+SOS_COMMAND_ENTRY(GCHandles)
+SOS_COMMAND_ENTRY(TraceToCode)
+SOS_COMMAND_ENTRY(GetCodeTypeFlags)
+SOS_COMMAND_ENTRY(StopOnException)
+SOS_COMMAND_ENTRY(GCHandleLeaks)
+SOS_COMMAND_ENTRY(Watch)
+SOS_COMMAND_ENTRY(ClrStack)
+SOS_COMMAND_ENTRY(VMMap)
+SOS_COMMAND_ENTRY(SOSFlush)
+SOS_COMMAND_ENTRY(VMStat)
+SOS_COMMAND_ENTRY(SaveModule)
+SOS_COMMAND_ENTRY(SaveAllModules)
+SOS_COMMAND_ENTRY(dbgout)
+SOS_COMMAND_ENTRY(VerifyStackTrace)
+SOS_COMMAND_ENTRY(SaveState)
+SOS_COMMAND_ENTRY(SuppressJitOptimization)
+SOS_COMMAND_ENTRY(StopOnCatch)
+SOS_COMMAND_ENTRY(enummem)
+SOS_COMMAND_ENTRY(ExposeDML)
+SOS_COMMAND_ENTRY(VerifyGMT)
+SOS_COMMAND_ENTRY(SetHostRuntime)
+SOS_COMMAND_ENTRY(processor)
+SOS_COMMAND_ENTRY(SetClrPath)
+SOS_COMMAND_ENTRY(runtimes)
+SOS_COMMAND_ENTRY(Help)
+
+// managedcommands.cpp
+SOS_COMMAND_ENTRY(DumpStackObjects)
+SOS_COMMAND_ENTRY(EEHeap)
+SOS_COMMAND_ENTRY(TraverseHeap)
+SOS_COMMAND_ENTRY(DumpRuntimeTypes)
+SOS_COMMAND_ENTRY(DumpHeap)
+SOS_COMMAND_ENTRY(VerifyHeap)
+SOS_COMMAND_ENTRY(AnalyzeOOM)
+SOS_COMMAND_ENTRY(VerifyObj)
+SOS_COMMAND_ENTRY(ListNearObj)
+SOS_COMMAND_ENTRY(GCHeapStat)
+SOS_COMMAND_ENTRY(FinalizeQueue)
+SOS_COMMAND_ENTRY(ThreadPool)
+SOS_COMMAND_ENTRY(PathTo)
+SOS_COMMAND_ENTRY(GCRoot)
+SOS_COMMAND_ENTRY(GCWhere)
+SOS_COMMAND_ENTRY(ObjSize)
+SOS_COMMAND_ENTRY(SetSymbolServer)
+SOS_COMMAND_ENTRY(assemblies)
+SOS_COMMAND_ENTRY(crashinfo)
+SOS_COMMAND_ENTRY(DumpAsync)
+SOS_COMMAND_ENTRY(logging)
+SOS_COMMAND_ENTRY(maddress)
+SOS_COMMAND_ENTRY(dumpexceptions)
+SOS_COMMAND_ENTRY(dumpgen)
+SOS_COMMAND_ENTRY(sizestats)
+SOS_COMMAND_ENTRY(DumpHttp)
+SOS_COMMAND_ENTRY(DumpRequests)
+SOS_COMMAND_ENTRY(dumplocks)
+SOS_COMMAND_ENTRY(ext)
+
+// gchist.cpp
+SOS_COMMAND_ENTRY(HistStats)
+SOS_COMMAND_ENTRY(HistRoot)
+SOS_COMMAND_ENTRY(HistObjFind)
+SOS_COMMAND_ENTRY(HistObj)
+SOS_COMMAND_ENTRY(HistInit)
+SOS_COMMAND_ENTRY(HistClear)
+
+// clrma/clrma.cpp
+SOS_COMMAND_ENTRY(clrmaconfig)
+
+#ifdef FEATURE_COMINTEROP
+SOS_COMMAND_ENTRY(COMState)
+SOS_COMMAND_ENTRY(RCWCleanupList)
+SOS_COMMAND_ENTRY(DumpRCW)
+SOS_COMMAND_ENTRY(DumpCCW)
+#endif
+
+#ifdef _DEBUG
+SOS_COMMAND_ENTRY(DumpPermissionSet)
+#endif
+
+#undef SOS_COMMAND_ENTRY
+
+struct SOSCommandEntry
+{
+    const char* name;
+    HRESULT (CALLBACK *func)(PDEBUG_CLIENT, PCSTR);
+};
+
+static const SOSCommandEntry s_commandTable[] =
+{
+#define ENTRY(name) { #name, name },
+#define ENTRY_ALIAS(alias, target) { alias, target },
+    // strike.cpp
+    ENTRY(IP2MD)
+    ENTRY(DumpStack)
+    ENTRY(DumpMD)
+    ENTRY(DumpIL)
+    ENTRY(DumpSig)
+    ENTRY(DumpSigElem)
+    ENTRY(DumpClass)
+    ENTRY(DumpMT)
+    ENTRY(DumpArray)
+    ENTRY(DumpObj)
+    ENTRY(DumpALC)
+    ENTRY(DumpDelegate)
+    ENTRY(PrintException)
+    ENTRY(DumpVC)
+    ENTRY(SyncBlk)
+    ENTRY(DumpModule)
+    ENTRY(DumpDomain)
+    ENTRY(DumpAssembly)
+    ENTRY(ThreadState)
+    ENTRY(Threads)
+    ENTRY(WatsonBuckets)
+    ENTRY(SOSHandleCLRN)
+    ENTRY(bpmd)
+    ENTRY(FindAppDomain)
+    ENTRY(EHInfo)
+    ENTRY(GCInfo)
+    ENTRY(u)
+    ENTRY(DumpLog)
+    ENTRY(DumpGCData)
+    ENTRY(EEVersion)
+    ENTRY(SOSStatus)
+    ENTRY(Token2EE)
+    ENTRY(Name2EE)
+    ENTRY(FindRoots)
+    ENTRY(GCHandles)
+    ENTRY(TraceToCode)
+    ENTRY(GetCodeTypeFlags)
+    ENTRY(StopOnException)
+    ENTRY(GCHandleLeaks)
+    ENTRY(Watch)
+    ENTRY(ClrStack)
+    ENTRY(VMMap)
+    ENTRY(SOSFlush)
+    ENTRY(VMStat)
+    ENTRY(SaveModule)
+    ENTRY(SaveAllModules)
+    ENTRY(dbgout)
+    ENTRY(VerifyStackTrace)
+    ENTRY(SaveState)
+    ENTRY(SuppressJitOptimization)
+    ENTRY(StopOnCatch)
+    ENTRY(enummem)
+    ENTRY(ExposeDML)
+    ENTRY(VerifyGMT)
+    ENTRY(SetHostRuntime)
+    ENTRY(processor)
+    ENTRY(SetClrPath)
+    ENTRY(runtimes)
+    ENTRY(Help)
+    // managedcommands.cpp
+    ENTRY(DumpStackObjects)
+    ENTRY(EEHeap)
+    ENTRY(TraverseHeap)
+    ENTRY(DumpRuntimeTypes)
+    ENTRY(DumpHeap)
+    ENTRY(VerifyHeap)
+    ENTRY(AnalyzeOOM)
+    ENTRY(VerifyObj)
+    ENTRY(ListNearObj)
+    ENTRY(GCHeapStat)
+    ENTRY(FinalizeQueue)
+    ENTRY(ThreadPool)
+    ENTRY(PathTo)
+    ENTRY(GCRoot)
+    ENTRY(GCWhere)
+    ENTRY(ObjSize)
+    ENTRY(SetSymbolServer)
+    ENTRY(assemblies)
+    ENTRY(crashinfo)
+    ENTRY(DumpAsync)
+    ENTRY(logging)
+    ENTRY(maddress)
+    ENTRY(dumpexceptions)
+    ENTRY(dumpgen)
+    ENTRY(sizestats)
+    ENTRY(DumpHttp)
+    ENTRY(DumpRequests)
+    ENTRY(dumplocks)
+    ENTRY(ext)
+    // gchist.cpp
+    ENTRY(HistStats)
+    ENTRY(HistRoot)
+    ENTRY(HistObjFind)
+    ENTRY(HistObj)
+    ENTRY(HistInit)
+    ENTRY(HistClear)
+    // clrma
+    ENTRY(clrmaconfig)
+#ifdef FEATURE_COMINTEROP
+    ENTRY(COMState)
+    ENTRY(RCWCleanupList)
+    ENTRY(DumpRCW)
+    ENTRY(DumpCCW)
+#endif
+#ifdef _DEBUG
+    ENTRY(DumpPermissionSet)
+#endif
+#undef ENTRY
+#undef ENTRY_ALIAS
+    { nullptr, nullptr }
+};
+
+extern "C" HRESULT STDMETHODCALLTYPE SOSDispatchCommand(
+    PDEBUG_CLIENT client,
+    LPCSTR commandName,
+    LPCSTR args)
+{
+    for (const SOSCommandEntry* entry = s_commandTable; entry->name != nullptr; entry++)
+    {
+        if (_stricmp(entry->name, commandName) == 0)
+        {
+            return entry->func(client, args);
+        }
+    }
+    return E_NOTIMPL;
+}
+
+/**********************************************************************\
  * Returns the metadata from a local or downloaded assembly
 \**********************************************************************/
 HRESULT GetMetadataLocator(

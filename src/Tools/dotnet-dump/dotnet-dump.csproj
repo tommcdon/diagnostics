@@ -55,36 +55,58 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" />
 
   <!--
-      For Native AOT publish, PackAsTool is false so the default CopyToPublishDirectory in
-      sos-packaging.props doesn't apply. Copy the SOS native binaries for the target RID
-      to the publish directory if they exist (requires a prior native build).
-      Falls back to the other configuration (Debug/Release) if the matching config isn't available.
+      For Native AOT, statically link SOS into the binary.
+      This requires the sos_static.lib from a prior native build.
+      Also copy sosdocs.txt for help text (FindResource not available with static linking).
   -->
-  <Target Name="_CopyNativeSosForAot"
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <_SosStaticLibConfig>$(Configuration)</_SosStaticLibConfig>
+  </PropertyGroup>
+  <!-- Determine the native build output directories -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(RuntimeIdentifier)' == 'win-x64'">
+    <_SosNativeBinDir>$(ArtifactsBinDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeBinDir>
+    <_SosNativeObjDir>$(ArtifactsObjDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeObjDir>
+  </PropertyGroup>
+  <!-- Fallback to other configuration if primary doesn't exist -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(_SosNativeBinDir)' != '' and !Exists('$(_SosNativeBinDir)\sos_static.lib')">
+    <_SosStaticLibConfig Condition="'$(Configuration)' == 'Release'">Debug</_SosStaticLibConfig>
+    <_SosStaticLibConfig Condition="'$(Configuration)' == 'Debug'">Release</_SosStaticLibConfig>
+    <_SosNativeBinDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">$(ArtifactsBinDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeBinDir>
+    <_SosNativeObjDir Condition="'$(RuntimeIdentifier)' == 'win-x64'">$(ArtifactsObjDir)Windows_NT.x64.$(_SosStaticLibConfig)</_SosNativeObjDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true' and Exists('$(_SosNativeBinDir)\sos_static.lib')">
+    <!-- SOS static library -->
+    <NativeLibrary Include="$(_SosNativeBinDir)\sos_static.lib" />
+    <!-- SOS project dependencies (intermediate build outputs) -->
+    <NativeLibrary Include="$(_SosNativeObjDir)\src\SOS\extensions\extensions.lib" />
+    <NativeLibrary Include="$(_SosNativeObjDir)\src\shared\inc\corguids.lib" />
+    <NativeLibrary Include="$(_SosNativeObjDir)\src\shared\debug\dbgutil\dbgutil.lib" />
+    <NativeLibrary Include="$(_SosNativeObjDir)\src\shared\minipal\Windows\coreclrminipal.lib" />
+    <NativeLibrary Include="$(_SosNativeObjDir)\src\shared\utilcode\utilcodestaticnohost.lib" />
+    <!-- System import libraries required by SOS (CRT libs omitted; NativeAOT provides its own) -->
+    <NativeLibrary Include="kernel32.lib" />
+    <NativeLibrary Include="user32.lib" />
+    <NativeLibrary Include="ole32.lib" />
+    <NativeLibrary Include="oleaut32.lib" />
+    <NativeLibrary Include="dbghelp.lib" />
+    <NativeLibrary Include="uuid.lib" />
+    <NativeLibrary Include="version.lib" />
+    <NativeLibrary Include="dbgeng.lib" />
+    <NativeLibrary Include="advapi32.lib" />
+    <NativeLibrary Include="psapi.lib" />
+    <NativeLibrary Include="ntdll.lib" />
+    <NativeLibrary Include="mscoree.lib" />
+    <!-- Resolve SOS P/Invoke at link time -->
+    <DirectPInvoke Include="sos" />
+  </ItemGroup>
+
+  <!-- Copy sosdocs.txt for help text when statically linking (FindResource unavailable) -->
+  <Target Name="_CopySosDocsForAot"
           AfterTargets="Publish"
           Condition="'$(PublishAot)' == 'true'">
-    <PropertyGroup>
-      <_SosFallbackConfig Condition="'$(Configuration)' == 'Release'">Debug</_SosFallbackConfig>
-      <_SosFallbackConfig Condition="'$(Configuration)' == 'Debug'">Release</_SosFallbackConfig>
-    </PropertyGroup>
-    <ItemGroup>
-      <_SosNativeForRid Include="@(SosRequiredBinaries)" Condition="'%(TargetRid)' == '$(RuntimeIdentifier)' and Exists('%(FullPath)')" />
-    </ItemGroup>
-    <!-- If no binaries found for the current configuration, try the other configuration as fallback -->
-    <ItemGroup Condition="'@(_SosNativeForRid)' == '' and '$(_SosFallbackConfig)' != ''">
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)Windows_NT.x64.$(_SosFallbackConfig)\sos.dll" TargetRid="win-x64" Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)Windows_NT.x64.$(_SosFallbackConfig)\Microsoft.DiaSymReader.Native.amd64.dll" TargetRid="win-x64" Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)linux.x64.$(_SosFallbackConfig)\libsos.so" TargetRid="linux-x64" Condition="'$(RuntimeIdentifier)' == 'linux-x64'" />
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)linux.arm64.$(_SosFallbackConfig)\libsos.so" TargetRid="linux-arm64" Condition="'$(RuntimeIdentifier)' == 'linux-arm64'" />
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)osx.x64.$(_SosFallbackConfig)\libsos.dylib" TargetRid="osx-x64" Condition="'$(RuntimeIdentifier)' == 'osx-x64'" />
-      <_SosFallbackBinaries Include="$(ArtifactsBinDir)osx.arm64.$(_SosFallbackConfig)\libsos.dylib" TargetRid="osx-arm64" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'" />
-      <_SosNativeForRid Include="@(_SosFallbackBinaries)" Condition="Exists('%(FullPath)')" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_SosNativeForRid)"
-          DestinationFolder="$(PublishDir)%(TargetRid)"
-          SkipUnchangedFiles="true"
-          Condition="'@(_SosNativeForRid)' != ''" />
-    <Message Importance="High" Text="WARNING: SOS native binaries for $(RuntimeIdentifier) not found. Run a full build (Build.cmd) first to produce native components."
-             Condition="'@(_SosNativeForRid)' == ''" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\SOS\Strike\sosdocs.txt"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 </Project>

@@ -268,4 +268,5 @@ EXPORTS
 
     SOSInitializeByHost
     SOSUninitializeByHost
+    SOSDispatchCommand
     InitializeHostServices

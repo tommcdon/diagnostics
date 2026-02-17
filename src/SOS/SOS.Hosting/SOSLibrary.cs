@@ -54,12 +54,32 @@ namespace SOS.Hosting
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr LockResource(IntPtr hResource);
 
+        // P/Invoke declarations for statically linked SOS (Native AOT)
+        [DllImport("sos", EntryPoint = "SOSInitializeByHost", CallingConvention = CallingConvention.StdCall)]
+        private static extern int NativeSOSInitializeByHost(IntPtr punk, IntPtr debuggerServices);
+
+        [DllImport("sos", EntryPoint = "SOSUninitializeByHost", CallingConvention = CallingConvention.StdCall)]
+        private static extern void NativeSOSUninitializeByHost();
+
+        [DllImport("sos", EntryPoint = "SOSDispatchCommand", CallingConvention = CallingConvention.StdCall)]
+        private static extern int NativeSOSDispatchCommand(
+            IntPtr client,
+            [In, MarshalAs(UnmanagedType.LPStr)] string commandName,
+            [In, MarshalAs(UnmanagedType.LPStr)] string args);
+
         private const string SOSInitialize = "SOSInitializeByHost";
         private const string SOSUninitialize = "SOSUninitializeByHost";
 
         private readonly HostWrapper _hostWrapper;
         private readonly bool _uninitializeLibrary;
+        private readonly bool _isStaticLinked;
         private IntPtr _sosLibrary = IntPtr.Zero;
+
+        /// <summary>
+        /// When set to true before TryCreate, SOS will use static P/Invoke instead of LoadLibrary.
+        /// Set this for Native AOT builds where SOS is statically linked.
+        /// </summary>
+        public static bool UseStaticLinking { get; set; }
 
         /// <summary>
         /// The native SOS binaries path. Default is OS/architecture (RID) named directory in the same directory as this assembly.
@@ -90,6 +110,7 @@ namespace SOS.Hosting
         /// <param name="host">sos library info or null</param>
         private SOSLibrary(IHost host, ISOSModule sosModule)
         {
+            _isStaticLinked = UseStaticLinking;
             if (sosModule is not null)
             {
                 SOSPath = sosModule.SOSPath;
@@ -115,6 +136,17 @@ namespace SOS.Hosting
         /// </summary>
         private void Initialize()
         {
+            if (_isStaticLinked)
+            {
+                // SOS is statically linked into the Native AOT binary
+                int result = NativeSOSInitializeByHost(_hostWrapper.IHost, IntPtr.Zero);
+                if (result != 0)
+                {
+                    throw new InvalidOperationException($"SOS initialization FAILED 0x{result:X8}");
+                }
+                Trace.TraceInformation("SOS initialized (static linked)");
+                return;
+            }
             if (_sosLibrary == IntPtr.Zero)
             {
                 string sos;
@@ -172,6 +204,12 @@ namespace SOS.Hosting
         private void Uninitialize()
         {
             Trace.TraceInformation("SOSLibrary: Uninitialize");
+            if (_isStaticLinked)
+            {
+                NativeSOSUninitializeByHost();
+                _hostWrapper.ReleaseWithCheck();
+                return;
+            }
             if (_uninitializeLibrary && _sosLibrary != IntPtr.Zero)
             {
                 SOSUninitializeDelegate uninitializeFunc = SOSHost.GetDelegateFunction<SOSUninitializeDelegate>(_sosLibrary, SOSUninitialize);
@@ -191,14 +229,21 @@ namespace SOS.Hosting
         /// <param name="arguments">the command arguments and options</param>
         public void ExecuteCommand(IntPtr client, string command, string arguments)
         {
-            Debug.Assert(_sosLibrary != IntPtr.Zero);
-
-            SOSCommandDelegate commandFunc = SOSHost.GetDelegateFunction<SOSCommandDelegate>(_sosLibrary, command);
-            if (commandFunc == null)
+            int result;
+            if (_isStaticLinked)
             {
-                throw new CommandNotFoundException(command);
+                result = NativeSOSDispatchCommand(client, command, arguments ?? "");
             }
-            int result = commandFunc(client, arguments ?? "");
+            else
+            {
+                Debug.Assert(_sosLibrary != IntPtr.Zero);
+                SOSCommandDelegate commandFunc = SOSHost.GetDelegateFunction<SOSCommandDelegate>(_sosLibrary, command);
+                if (commandFunc == null)
+                {
+                    throw new CommandNotFoundException(command);
+                }
+                result = commandFunc(client, arguments ?? "");
+            }
             if (result == HResult.E_NOTIMPL)
             {
                 throw new CommandNotFoundException(command);
@@ -213,7 +258,26 @@ namespace SOS.Hosting
         public string GetHelpText(string command)
         {
             string helpText;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (_isStaticLinked || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // For static linking or non-Windows, read from the text file
+                string helpTextFile;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    helpTextFile = Path.Combine(SOSPath, "sosdocs.txt");
+                    if (!File.Exists(helpTextFile))
+                    {
+                        // Fall back to the base directory for AOT
+                        helpTextFile = Path.Combine(AppContext.BaseDirectory, "sosdocs.txt");
+                    }
+                }
+                else
+                {
+                    helpTextFile = Path.Combine(SOSPath, "sosdocsunix.txt");
+                }
+                helpText = File.ReadAllText(helpTextFile);
+            }
+            else
             {
                 IntPtr hResInfo = FindResource(_sosLibrary, "DOCUMENTATION", "TEXT");
                 if (hResInfo == IntPtr.Zero)
@@ -231,11 +295,6 @@ namespace SOS.Hosting
                     throw new DiagnosticsException("Can not SOS help text");
                 }
                 helpText = Marshal.PtrToStringAnsi(helpTextPtr);
-            }
-            else
-            {
-                string helpTextFile = Path.Combine(SOSPath, "sosdocsunix.txt");
-                helpText = File.ReadAllText(helpTextFile);
             }
             command = command.ToLowerInvariant();
             string searchString = $"COMMAND: {command}.";
