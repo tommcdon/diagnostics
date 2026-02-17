@@ -192,7 +192,7 @@ namespace SOS.Hosting.DbgEng
             IntPtr self,
             [In][MarshalAs(UnmanagedType.LPStr)] string Buffer);
 
-        //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         private delegate int OutputDelegate(
             IntPtr self,
             [In] DEBUG_OUTPUT Mask,
@@ -205,7 +205,7 @@ namespace SOS.Hosting.DbgEng
             [In][MarshalAs(UnmanagedType.LPStr)] string Format,
             [In] IntPtr valist);
 
-        //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         private delegate int ControlledOutputDelegate(
             IntPtr self,
             [In] DEBUG_OUTCTL OutputControl,
@@ -220,7 +220,7 @@ namespace SOS.Hosting.DbgEng
             [In][MarshalAs(UnmanagedType.LPStr)] string Format,
             [In] IntPtr valist);
 
-        //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         private delegate int OutputPromptDelegate(
             IntPtr self,
             [In] DEBUG_OUTCTL OutputControl,
