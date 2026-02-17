@@ -72,11 +72,19 @@ namespace Microsoft.Diagnostics.ExtensionCommands
                 WriteLine("Extensions loaded:");
                 foreach (Assembly extension in extensions)
                 {
-#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file/AOT apps
                     string path = extension.Location;
 #pragma warning restore IL3000
-                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(path);
-                    WriteLine($"-> {versionInfo.ProductVersion} {path}");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(path);
+                        WriteLine($"-> {versionInfo.ProductVersion} {path}");
+                    }
+                    else
+                    {
+                        // In Native AOT or single-file, Assembly.Location is empty
+                        WriteLine($"-> {extension.GetName().Version} (Native AOT)");
+                    }
                 }
                 WriteLine($"Host runtime {RuntimeInformation.FrameworkDescription} on {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}");
                 long memoryUsage = GC.GetTotalMemory(forceFullCollection: true);

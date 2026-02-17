@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
@@ -35,7 +36,13 @@ namespace Microsoft.Diagnostics.Tools.Dump
             DiagnosticLoggingService.Instance.SetConsole(_fileLoggingConsoleService, _fileLoggingConsoleService);
 
             _commandService = new CommandService();
-            ServiceManager.NotifyExtensionLoad.Register(_commandService.AddCommands);
+
+            // Only register reflection-based command discovery for dynamic extensions
+            // when running with a managed runtime (JIT). In AOT, extensions can't be loaded.
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                ServiceManager.NotifyExtensionLoad.Register(_commandService.AddCommands);
+            }
         }
 
         public int Analyze(FileInfo dump_path, string[] command)
@@ -80,16 +87,21 @@ namespace Microsoft.Diagnostics.Tools.Dump
             // Add the specially handled exit command
             _commandService.AddCommands(typeof(ExitCommand), (services) => new ExitCommand(_consoleService.Stop));
 
-            // Display any extension assembly loads on console
+            // Dynamic extension loading is only possible when a managed runtime (CoreCLR) is present.
+            // In Native AOT, there is no JIT compiler, so managed assemblies cannot be loaded at runtime.
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Display any extension assembly loads on console
 #pragma warning disable IL3000 // Assembly.Location may be empty in single-file apps
-            ServiceManager.NotifyExtensionLoad.Register((Assembly assembly) => _fileLoggingConsoleService.WriteLine($"Loading extension {assembly.Location}"));
+                ServiceManager.NotifyExtensionLoad.Register((Assembly assembly) => _fileLoggingConsoleService.WriteLine($"Loading extension {assembly.Location}"));
 #pragma warning restore IL3000
-            ServiceManager.NotifyExtensionLoadFailure.Register((Exception ex) => _fileLoggingConsoleService.WriteLine(ex.Message));
+                ServiceManager.NotifyExtensionLoadFailure.Register((Exception ex) => _fileLoggingConsoleService.WriteLine(ex.Message));
 
-            // Load any extra extensions
+                // Load any extra extensions
 #pragma warning disable IL2026 // Extension loading is intentional and only used for dynamically discovered plugins
-            ServiceManager.LoadExtensions();
+                ServiceManager.LoadExtensions();
 #pragma warning restore IL2026
+            }
 
             // Loading extensions or adding service factories not allowed after this point.
             ServiceContainer serviceContainer = CreateServiceContainer();

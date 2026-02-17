@@ -98,9 +98,11 @@ namespace SOS.Hosting
             else
             {
                 string rid = InstallHelper.GetRid();
-#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps
-                SOSPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), rid);
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file/AOT apps
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
 #pragma warning restore IL3000
+                string baseDir = !string.IsNullOrEmpty(assemblyLocation) ? Path.GetDirectoryName(assemblyLocation) : AppContext.BaseDirectory;
+                SOSPath = Path.Combine(baseDir, rid);
                 _uninitializeLibrary = true;
             }
             _hostWrapper = new HostWrapper(host);

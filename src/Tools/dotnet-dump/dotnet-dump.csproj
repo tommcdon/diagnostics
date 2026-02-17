@@ -13,6 +13,8 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <IsAotCompatible Condition="'$(NativeAotBuild)' == 'true'">true</IsAotCompatible>
     <PublishAot Condition="'$(NativeAotBuild)' == 'true'">true</PublishAot>
+    <!-- Native AOT produces a native binary, not a .NET tool package -->
+    <PackAsTool Condition="'$(PublishAot)' == 'true'">false</PackAsTool>
     <!--
         Suppress ILC trim/AOT warnings from netstandard2.0 dependency libraries that fundamentally
         use reflection (COM interop in SOS.Hosting, struct layout in FileFormats, etc.).
@@ -49,5 +51,24 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\Microsoft.Diagnostics.DebugServices.SourceGeneration\Microsoft.Diagnostics.DebugServices.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" Condition="'$(PublishAot)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" />
+
+  <!--
+      For Native AOT publish, PackAsTool is false so the default CopyToPublishDirectory in
+      sos-packaging.props doesn't apply. Copy the SOS native binaries for the target RID
+      to the publish directory if they exist (requires a prior native build).
+  -->
+  <Target Name="_CopyNativeSosForAot"
+          AfterTargets="Publish"
+          Condition="'$(PublishAot)' == 'true'">
+    <ItemGroup>
+      <_SosNativeForRid Include="@(SosRequiredBinaries)" Condition="'%(TargetRid)' == '$(RuntimeIdentifier)' and Exists('%(FullPath)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_SosNativeForRid)"
+          DestinationFolder="$(PublishDir)%(TargetRid)"
+          SkipUnchangedFiles="true"
+          Condition="'@(_SosNativeForRid)' != ''" />
+    <Warning Text="SOS native binaries for $(RuntimeIdentifier) not found. Run a full build (Build.cmd) first to produce native components."
+             Condition="'@(_SosNativeForRid)' == ''" />
+  </Target>
 </Project>
