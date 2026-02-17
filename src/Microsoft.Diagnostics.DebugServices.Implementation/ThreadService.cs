@@ -115,7 +115,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation {
                 {
                     FramePointerIndex = index;
                 }
-                RegisterInfo registerInfo = new(index, offsetAttribute.Value, Marshal.SizeOf(field.FieldType), registerAttribute.Name ?? field.Name.ToLowerInvariant());
+                RegisterInfo registerInfo = new(index, offsetAttribute.Value, GetFieldSize(field), registerAttribute.Name ?? field.Name.ToLowerInvariant());
                 registers.Add(registerInfo);
                 index++;
             }
@@ -130,6 +130,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation {
         {
             return contextType.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
         }
+
+#pragma warning disable IL3050 // Marshal.SizeOf(Type) requires dynamic code but register context field types are known primitives
+        private static int GetFieldSize(FieldInfo field) => Marshal.SizeOf(field.FieldType);
+#pragma warning restore IL3050
 
         void IDisposable.Dispose() => Flush();
 

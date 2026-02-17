@@ -51,7 +51,9 @@ namespace Microsoft.SymbolStore
             {
                 tracer.Information($"Testing checksum: {checksum}");
 
+#pragma warning disable IL2026 // HashAlgorithm.Create uses reflection to resolve algorithm names
                 HashAlgorithm algorithm = HashAlgorithm.Create(checksum.AlgorithmName);
+#pragma warning restore IL2026
                 if (algorithm != null)
                 {
                     algorithmNameKnown = true;

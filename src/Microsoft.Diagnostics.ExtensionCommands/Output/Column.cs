@@ -61,7 +61,9 @@ namespace Microsoft.Diagnostics.ExtensionCommands.Output
             where TEnum : struct
         {
             int len = 0;
+#pragma warning disable IL3050 // Enum.GetValues requires dynamic code for value types
             foreach (TEnum t in Enum.GetValues(typeof(TEnum)))
+#pragma warning restore IL3050
             {
                 len = Math.Max(len, t.ToString().Length);
             }

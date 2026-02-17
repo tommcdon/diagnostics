@@ -245,7 +245,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         {
             if (type.IsClass)
             {
+#pragma warning disable IL2026 // CreateInstance is only called when no source-generated factory is provided (dynamic extension loading)
                 factory ??= (services) => Utilities.CreateInstance(type, services);
+#pragma warning restore IL2026
 
                 // Only look at the actual type and not any the base types for command attributes
                 CommandAttribute[] commandAttributes = (CommandAttribute[])type.GetCustomAttributes(typeof(CommandAttribute), inherit: false);

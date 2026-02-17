@@ -72,7 +72,9 @@ namespace Microsoft.Diagnostics.ExtensionCommands
                 WriteLine("Extensions loaded:");
                 foreach (Assembly extension in extensions)
                 {
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps
                     string path = extension.Location;
+#pragma warning restore IL3000
                     FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(path);
                     WriteLine($"-> {versionInfo.ProductVersion} {path}");
                 }

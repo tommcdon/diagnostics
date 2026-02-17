@@ -13,6 +13,12 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <IsAotCompatible Condition="'$(NativeAotBuild)' == 'true'">true</IsAotCompatible>
     <PublishAot Condition="'$(NativeAotBuild)' == 'true'">true</PublishAot>
+    <!--
+        Suppress ILC trim/AOT warnings from netstandard2.0 dependency libraries that fundamentally
+        use reflection (COM interop in SOS.Hosting, struct layout in FileFormats, etc.).
+        These cannot be resolved without major architectural changes to the library code.
+    -->
+    <NoWarn Condition="'$(NativeAotBuild)' == 'true'">$(NoWarn);IL2026;IL2070;IL2072;IL2092;IL2111;IL3050;IL3000</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,5 +49,5 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\Microsoft.Diagnostics.DebugServices.SourceGeneration\Microsoft.Diagnostics.DebugServices.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" Condition="'$(PublishAot)' != 'true'" />
 </Project>

@@ -17,7 +17,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
 
         private static string GetDefaultAssembliesPath()
         {
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps — we fall back to BaseDirectory
             string location = Assembly.GetExecutingAssembly().Location;
+#pragma warning restore IL3000
             if (!string.IsNullOrEmpty(location))
             {
                 return Path.GetDirectoryName(location);
@@ -57,7 +59,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             }
 
             // Look next to requesting assembly
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps
             assemblyPath = args.RequestingAssembly?.Location;
+#pragma warning restore IL3000
             if (!string.IsNullOrEmpty(assemblyPath))
             {
                 probingPath = Path.Combine(Path.GetDirectoryName(assemblyPath), fileName);
@@ -87,7 +91,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 AssemblyName name = AssemblyName.GetAssemblyName(filePath);
                 if (name.Version >= minimumVersion)
                 {
+#pragma warning disable IL2026 // Assembly.LoadFile is used for dynamic extension loading
                     assembly = Assembly.LoadFile(filePath);
+#pragma warning restore IL2026
                     return true;
                 }
             }

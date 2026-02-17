@@ -417,7 +417,11 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             try
             {
                 JsonSerializerOptions options = new() { AllowTrailingCommas = true, NumberHandling = JsonNumberHandling.AllowReadingFromString };
+#pragma warning disable IL2026 // JsonSerializer.Deserialize uses reflection on netstandard2.0
+#pragma warning disable IL3050 // JsonSerializer.Deserialize may require dynamic code
                 CrashInfoJson crashInfo = JsonSerializer.Deserialize<CrashInfoJson>(triageBuffer, options);
+#pragma warning restore IL3050
+#pragma warning restore IL2026
                 if (crashInfo != null)
                 {
                     if (Version.TryParse(crashInfo.Version, out Version protocolVersion) && protocolVersion.Major >= 1)

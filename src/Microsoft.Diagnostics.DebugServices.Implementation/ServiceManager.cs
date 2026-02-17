@@ -185,7 +185,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                  or FileNotFoundException)
             {
                 Trace.TraceError(ex.ToString());
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps
                 NotifyExtensionLoadFailure.Fire(new DiagnosticsException($"Extension load failure - {ex.Message} {assembly.Location}", ex));
+#pragma warning restore IL3000
             }
         }
 
@@ -274,7 +276,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 string[] paths = diagnosticExtensions.Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
                 extensionPaths.AddRange(paths);
             }
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps — we fall back to BaseDirectory
             string assemblyPath = Assembly.GetExecutingAssembly().Location;
+#pragma warning restore IL3000
             string baseDir = !string.IsNullOrEmpty(assemblyPath) ? Path.GetDirectoryName(assemblyPath) : AppContext.BaseDirectory;
             if (!string.IsNullOrEmpty(baseDir))
             {
@@ -357,6 +361,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         /// </summary>
         /// <param name="extensionPath">extension assembly path</param>
         /// <returns>assembly</returns>
+        [RequiresUnreferencedCode("Dynamically loads extension assemblies.")]
         private Assembly UseAssemblyLoadContext(string extensionPath)
         {
             ExtensionLoadContext extension = new(extensionPath);
@@ -389,7 +394,9 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
 
             private static string GetDefaultAssembliesPath()
             {
+#pragma warning disable IL3000 // Assembly.Location returns empty in single-file apps — we fall back to BaseDirectory
                 string location = Assembly.GetExecutingAssembly().Location;
+#pragma warning restore IL3000
                 if (!string.IsNullOrEmpty(location))
                 {
                     return Path.GetDirectoryName(location);
