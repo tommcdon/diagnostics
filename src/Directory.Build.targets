@@ -15,7 +15,7 @@
   This should be removed at some point as it's brittle (harcodes versions and creates native-managed coupling). -->
   <Target Name="_PublishPackageReferences"
       AfterTargets="PostBuildEvent"
-      Condition="$(NeedsPublishing) == 'true'"
+      Condition="$(NeedsPublishing) == 'true' and '$(PublishAot)' != 'true'"
       DependsOnTargets="$(_BeforePublishNoBuildTargets);$(_CorePublishTargets)" />
 
   <Target Name="InvokeInstallRuntimes"

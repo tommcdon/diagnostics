@@ -68,6 +68,14 @@
      -->
     <NetCoreAppMinVersion>8.0</NetCoreAppMinVersion>
     <NetCoreAppMinTargetFramework>net$(NetCoreAppMinVersion)</NetCoreAppMinTargetFramework>
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentTargetFramework>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFramework>
+    <!--
+        When building for Native AOT, use -p:NativeAotBuild=true to retarget global tools to
+        $(NetCoreAppCurrentTargetFramework) (net10.0) which has full AOT support. Then publish
+        with: dotnet publish -r <rid> -p:NativeAotBuild=true
+    -->
+    <NetCoreAppMinTargetFramework Condition="'$(NativeAotBuild)' == 'true'">$(NetCoreAppCurrentTargetFramework)</NetCoreAppMinTargetFramework>
     <!-- This is the list of TFMs we build our debuggees and tracees as. -->
     <SupportedSubProcessTargetFrameworks>net8.0;net9.0;net10.0</SupportedSubProcessTargetFrameworks>
     <!-- This is the list of TFMs we build our unit tests as. -->
