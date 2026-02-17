@@ -556,7 +556,8 @@ namespace SOS.Hosting {
             uint* pathSize)
         {
             buffer?.Clear();
-            Write(pathSize);
+            // pathSize must include the null terminator (native callers allocate pathSize WCHARs)
+            Write(pathSize, 1);
             return HResult.S_OK;
         }
 
