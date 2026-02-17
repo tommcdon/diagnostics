@@ -751,6 +751,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             {
                 return new Argument<bool>(name);
             }
+            if (propertyType == typeof(bool?))
+            {
+                return new Argument<bool?>(name);
+            }
             if (propertyType == typeof(int))
             {
                 return new Argument<int>(name);
@@ -798,6 +802,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
             if (propertyType == typeof(bool))
             {
                 return new Option<bool>(name, aliases);
+            }
+            if (propertyType == typeof(bool?))
+            {
+                return new Option<bool?>(name, aliases);
             }
             if (propertyType == typeof(int))
             {
