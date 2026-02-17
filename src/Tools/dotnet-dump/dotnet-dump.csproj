@@ -52,6 +52,11 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\Microsoft.Diagnostics.DebugServices.SourceGeneration\Microsoft.Diagnostics.DebugServices.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <!-- Runtime directives to preserve TStruct-derived type metadata for Activator.CreateInstance in NativeAOT -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)..\..\sos-packaging.props" />
 
   <!--

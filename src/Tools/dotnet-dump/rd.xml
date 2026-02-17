@@ -1,0 +1,75 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <!--
+      Preserve parameterless constructors for TStruct-derived types used by Microsoft.FileFormats.
+      TLayout.Read() calls Activator.CreateInstance(Type) which requires constructor metadata
+      that NativeAOT would otherwise trim.
+    -->
+
+    <Assembly Name="Microsoft.Diagnostics.ExtensionCommands">
+      <Type Name="Microsoft.Diagnostics.Runtime.RuntimeInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.Diagnostics.ExtensionCommands.ClrEngineMetrics" Dynamic="Required All" />
+      <Type Name="Microsoft.Diagnostics.ExtensionCommands.SpecialDiagInfoHeader" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="Microsoft.FileFormats">
+      <!-- PE -->
+      <Type Name="Microsoft.FileFormats.PE.ImageOptionalHeaderMagic" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageOptionalHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageFileHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageSectionHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageDataDirectory" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageDebugDirectory" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.CvInfoPdb70" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.PerfMapIdV1" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageResourceDirectory" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageResourceDirectoryEntry" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageResourceDataEntry" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.VsFixedFileInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.VsVersionInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.ImageExportDirectory" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PE.PdbChecksum" Dynamic="Required All" />
+
+      <!-- PDB -->
+      <Type Name="Microsoft.FileFormats.PDB.PDBFileHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PDB.NameIndexStreamHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.PDB.DbiStreamHeader" Dynamic="Required All" />
+
+      <!-- Minidump -->
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpDirectory" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpSystemInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.FixedFileInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpLocationDescriptor" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpModule" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpMemoryDescriptor" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.Minidump.MinidumpMemoryDescriptor64" Dynamic="Required All" />
+
+      <!-- ELF -->
+      <Type Name="Microsoft.FileFormats.ELF.ELFHeaderIdent" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFFileTableHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFFileTableEntryPointers" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFSectionHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFProgramHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.ELF.ELFNoteHeader" Dynamic="Required All" />
+
+      <!-- MachO -->
+      <Type Name="Microsoft.FileFormats.MachO.MachHeaderMagic" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachLoadCommand" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachSegmentLoadCommand" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachUuidLoadCommand" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachSymtabLoadCommand" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachDySymtabLoadCommand" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachFixedLengthString16" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachSection" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.NList" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.DyldImageAllInfosVersion" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.DyldImageInfo" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachFatHeaderMagic" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachFatHeader" Dynamic="Required All" />
+      <Type Name="Microsoft.FileFormats.MachO.MachFatArch" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>
