@@ -553,7 +553,16 @@ static HRESULT InitializeNetCoreHost()
     sosModulePath = info.dli_fname;
 #else
     ArrayHolder<char> szSOSModulePath = new char[MAX_LONGPATH + 1];
-    if (GetModuleFileNameA(g_hInstance, szSOSModulePath, MAX_LONGPATH) == 0)
+    // Use address-based module lookup to resolve the actual loaded sos module.
+    // g_hInstance (cached in DllMain) can become stale when a debugger host (e.g. WinDbg)
+    // pre-loads its own bundled sos.dll and the user later loads a different copy.
+    HMODULE hSOSModule = NULL;
+    if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCSTR)&InitializeNetCoreHost, &hSOSModule))
+    {
+        hSOSModule = g_hInstance;
+    }
+    if (GetModuleFileNameA(hSOSModule, szSOSModulePath, MAX_LONGPATH) == 0)
     {
         TraceHostingError("Failed to get SOS module directory\n");
         return HRESULT_FROM_WIN32(GetLastError());

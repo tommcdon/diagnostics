@@ -313,10 +313,10 @@ LPCSTR Runtime::GetDacFilePath()
 
 #ifndef FEATURE_PAL
 extern HMODULE g_hInstance;
-#else
-// A file-local anchor used to resolve the directory of the SOS module via dladdr.
-static void CDacModuleAnchor() {}
 #endif
+// A file-local anchor used to resolve the directory of the SOS module via
+// dladdr (Unix) or GetModuleHandleEx (Windows).
+static void CDacModuleAnchor() {}
 
 /**********************************************************************\
  * Returns the cDAC (mscordaccore_universal) module path bundled next to
@@ -339,7 +339,15 @@ LPCSTR Runtime::GetCDacFilePath()
         }
         strcpy_s(szSOSModulePath.GetPtr(), MAX_LONGPATH, info.dli_fname);
 #else
-        if (GetModuleFileNameA(g_hInstance, szSOSModulePath, MAX_LONGPATH) == 0)
+        // Use address-based module lookup instead of the cached g_hInstance to resolve
+        // the actual loaded sos module (see hostcoreclr.cpp for rationale).
+        HMODULE hSOSModule = NULL;
+        if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                (LPCSTR)&CDacModuleAnchor, &hSOSModule))
+        {
+            hSOSModule = g_hInstance;
+        }
+        if (GetModuleFileNameA(hSOSModule, szSOSModulePath, MAX_LONGPATH) == 0)
         {
             ExtDbgOut("GetCDacFilePath: GetModuleFileNameA failed %08x\n", HRESULT_FROM_WIN32(GetLastError()));
             return nullptr;
