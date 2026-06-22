@@ -146,7 +146,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         // Print the string up to that point
                     c = *ptr;
                     *ptr = 0;       // Terminate the string temporarily
-                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+                    vfprintf(file, format, (va_list)args);
                     *ptr = c;       // Put it back
 
                         // move the argument pointers past the part the was printed
@@ -245,7 +245,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                     }
                 }
             }
-            else if (*ptr == 's' || (*ptr == 'h' && *(ptr+1) == 's' && ++ptr))
+            else if (*ptr == 's' || ((*ptr == 'h' || (*ptr >= '0' && *ptr <= '9')) && *(ptr + 1) == 's' && ++ptr))
             {
                 HRESULT     hr;
 
@@ -262,7 +262,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
 
                 args[iArgCount] = strBuf;
             }
-            else if (*ptr == 'S' || (*ptr == 'l' && *(ptr+1) == 's' && ++ptr))
+            else if (*ptr == 'S' || ((*ptr == 'l' || (*ptr >= '0' && *ptr <= '9')) && *(ptr+1) == 's' && ++ptr))
             {
                 HRESULT     hr;
 
@@ -283,7 +283,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
         }
     }
         // Print anything after the last special format instruction.
-    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+    vfprintf(file, format, (va_list)args);
     fprintf(file, "\n");
 }
 
