@@ -377,6 +377,21 @@ LPCSTR Runtime::GetDbiFilePath()
 {
     if (m_dbiFilePath == nullptr)
     {
+        // No debugger service instance means that SOS is hosted by dotnet-dump,
+        // which does runtime enumeration in CLRMD. We should never get here.
+        IDebuggerServices* debuggerServices = GetDebuggerServices();
+        if (debuggerServices == nullptr)
+        {
+            ExtDbgOut("GetDbiFilePath: GetDebuggerServices returned nullptr\n");
+            return nullptr;
+        }
+        BOOL dacSignatureVerificationEnabled = FALSE;
+        HRESULT hr = debuggerServices->GetDacSignatureVerificationSettings(&dacSignatureVerificationEnabled);
+        if (FAILED(hr) || dacSignatureVerificationEnabled)
+        {
+            ExtDbgOut("GetDbiFilePath: GetDacSignatureVerificationSettings FAILED %08x or returned TRUE\n", hr);
+            return nullptr;
+        }
         LPCSTR directory = GetRuntimeDirectory();
         if (directory != nullptr)
         {

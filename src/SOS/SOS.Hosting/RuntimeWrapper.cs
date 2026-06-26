@@ -401,20 +401,15 @@ namespace SOS.Hosting
             {
                 return IntPtr.Zero;
             }
-            string dacFilePath = _runtime.GetDacFilePath(out bool _);
+            string dacFilePath = _runtime.GetDacFilePath(out bool verifySignature);
 
             if (_dbiHandle == IntPtr.Zero)
             {
-                try
+                _dbiHandle = LoadDbiLibrary(dbiFilePath, verifySignature);
+                if (_dbiHandle == IntPtr.Zero)
                 {
-                    _dbiHandle = DataTarget.PlatformFunctions.LoadLibrary(dbiFilePath);
-                }
-                catch (Exception ex) when (ex is DllNotFoundException or BadImageFormatException)
-                {
-                    Trace.TraceError($"LoadLibrary({dbiFilePath}) FAILED {ex}");
                     return IntPtr.Zero;
                 }
-                Debug.Assert(_dbiHandle != IntPtr.Zero);
             }
             ClrDebuggingVersion maxDebuggerSupportedVersion = new()
             {
@@ -547,6 +542,40 @@ namespace SOS.Hosting
                 _cdacHandle = LoadDacLibrary(cdacFilePath, verifySignature: false);
             }
             return _cdacHandle;
+        }
+
+        private static IntPtr LoadDbiLibrary(string dbiFilePath, bool verifySignature)
+        {
+            IntPtr dbiHandle = IntPtr.Zero;
+            IDisposable fileLock = null;
+            try
+            {
+                if (verifySignature)
+                {
+                    Trace.TraceInformation($"Verifying DBI signing and cert {dbiFilePath}");
+
+                    if (!AuthenticodeUtil.VerifyDacDll(dbiFilePath, out fileLock))
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+                try
+                {
+                    dbiHandle = DataTarget.PlatformFunctions.LoadLibrary(dbiFilePath);
+                }
+                catch (Exception ex) when (ex is DllNotFoundException or BadImageFormatException)
+                {
+                    Trace.TraceError($"LoadLibrary({dbiFilePath}) FAILED {ex}");
+                    return IntPtr.Zero;
+                }
+            }
+            finally
+            {
+                // Keep DBI file locked until it is loaded
+                fileLock?.Dispose();
+            }
+            Debug.Assert(dbiHandle != IntPtr.Zero);
+            return dbiHandle;
         }
 
         private static IntPtr LoadDacLibrary(string dacFilePath, bool verifySignature)
