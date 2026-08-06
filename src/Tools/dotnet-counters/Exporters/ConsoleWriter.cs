@@ -216,25 +216,38 @@ namespace Microsoft.Diagnostics.Tools.Counters.Exporters
             List<int> columnHeaderLen = new();
             List<int> maxValueColumnLen = new();
             int tagsCount = 0;
-            foreach (ObservedTagSet tagSet in counter.TagSets.Values.OrderBy(t => t.Tags))
+            bool hasAmbiguousTagSets = counter.TagSets.Values.Any(tagSet => tagSet.DisplayTags.Split(',').Any(tag =>
+                tag.IndexOf('=') < 0 || tag.IndexOf('=') != tag.LastIndexOf('=')));
+
+            if (hasAmbiguousTagSets)
             {
-                string[] tags = tagSet.DisplayTags.Split(',');
-                for (int i = 0; i < tags.Length; i++)
+                string[] values = counter.TagSets.Values.OrderBy(t => t.Tags).Select(t => t.DisplayTags).ToArray();
+                observedTags.Add(("Tags", values));
+                columnHeaderLen.Add("Tags".Length);
+                maxValueColumnLen.Add(values.Max(value => value.Length));
+            }
+            else
+            {
+                foreach (ObservedTagSet tagSet in counter.TagSets.Values.OrderBy(t => t.Tags))
                 {
-                    string tag = tags[i];
-                    string[] keyValue = tag.Split("=");
-                    int posTag = observedTags.FindIndex (tag => tag.header == keyValue[0]);
-                    if (posTag == -1)
+                    string[] tags = tagSet.DisplayTags.Split(',');
+                    for (int i = 0; i < tags.Length; i++)
                     {
-                        observedTags.Add((keyValue[0], new string[counter.TagSets.Count]));
-                        columnHeaderLen.Add(keyValue[0].Length);
-                        maxValueColumnLen.Add(default(int));
-                        posTag = observedTags.Count - 1;
+                        string tag = tags[i];
+                        string[] keyValue = tag.Split("=");
+                        int posTag = observedTags.FindIndex (tag => tag.header == keyValue[0]);
+                        if (posTag == -1)
+                        {
+                            observedTags.Add((keyValue[0], new string[counter.TagSets.Count]));
+                            columnHeaderLen.Add(keyValue[0].Length);
+                            maxValueColumnLen.Add(default(int));
+                            posTag = observedTags.Count - 1;
+                        }
+                        observedTags[posTag].values[tagsCount] = keyValue[1];
+                        maxValueColumnLen[posTag] = Math.Max(keyValue[1].Length, maxValueColumnLen[posTag]);
                     }
-                    observedTags[posTag].values[tagsCount] = keyValue[1];
-                    maxValueColumnLen[posTag] = Math.Max(keyValue[1].Length, maxValueColumnLen[posTag]);
+                    tagsCount++;
                 }
-                tagsCount++;
             }
             AdjustColumnsLength(columnHeaderLen, maxValueColumnLen);
             //print the header

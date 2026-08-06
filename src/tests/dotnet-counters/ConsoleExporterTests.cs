@@ -261,6 +261,20 @@ namespace DotnetCounters.UnitTests
         }
 
         [Fact]
+        public void DelimiterContainingMetricTagsDoNotStopConsoleRendering()
+        {
+            MockConsole console = new MockConsole(60, 40, _outputHelper);
+            ConsoleWriter exporter = new ConsoleWriter(console);
+            exporter.Initialize();
+
+            exporter.CounterPayloadReceived(CreateMeterCounterPreNet8("Provider1", "TaggedCounter", "{widget}", "color=red,blue", 1), false);
+            exporter.CounterPayloadReceived(CreateEventCounter("System.Runtime", "Surviving Counter", "count", 2), false);
+
+            Assert.Contains(console.Lines, line => line.Contains("color=red,blue", StringComparison.Ordinal));
+            Assert.Contains(console.Lines, line => line.Contains("Surviving Counter", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void LongMultidimensionalTagsAreTruncated()
         {
             MockConsole console = new MockConsole(50, 40, _outputHelper);
