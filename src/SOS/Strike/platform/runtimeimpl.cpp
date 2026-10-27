@@ -18,6 +18,11 @@
 #include "runtimeimpl.h"
 #include "datatarget.h"
 #include "cordebugdatatarget.h"
+
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#include <crtdbg.h>
+#include <stdio.h>
+#endif
 #include "runtimeinfo.h"
 
 #ifdef FEATURE_PAL
@@ -302,8 +307,21 @@ Runtime::~Runtime()
     }
     if (m_cdacDataProcess != nullptr)
     {
-        m_cdacDataProcess->Release();
+        ULONG remainingReferences = m_cdacDataProcess->Release();
         m_cdacDataProcess = nullptr;
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+        long requestNumber = 0;
+        bool isDebugCrtBlock = DataTarget::DebugLiveAllocation(&requestNumber);
+        fprintf(
+            stderr,
+            "SOS_CRT_AFTER_CDAC_RELEASE_REFS=%lu LIVE=%ld CRT_BLOCK=%d REQUEST=%ld\n",
+            remainingReferences,
+            DataTarget::DebugLiveCount(),
+            isDebugCrtBlock ? 1 : 0,
+            requestNumber);
+        _CrtDumpMemoryLeaks();
+        fflush(stderr);
+#endif
     }
     if (m_dbgShimHandle != nullptr)
     {

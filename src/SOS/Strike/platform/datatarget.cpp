@@ -10,6 +10,12 @@
 #include "corerror.h"
 #include "remotememoryservice.h"
 
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#include <crtdbg.h>
+static LONG s_debugLiveDataTargets = 0;
+static DataTarget* s_debugDataTarget = nullptr;
+#endif
+
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
 
 DataTarget::DataTarget(ULONG64 baseAddress, ULONG64 contractDescriptorAddress) :
@@ -18,6 +24,12 @@ DataTarget::DataTarget(ULONG64 baseAddress, ULONG64 contractDescriptorAddress) :
     m_contractDescriptorAddress(contractDescriptorAddress),
     m_debuggerServices(GetDebuggerServices())
 {
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+    InterlockedIncrement(&s_debugLiveDataTargets);
+    InterlockedExchangePointer(
+        reinterpret_cast<PVOID volatile*>(&s_debugDataTarget),
+        this);
+#endif
     if (m_debuggerServices != nullptr)
     {
         m_debuggerServices->AddRef();
@@ -26,11 +38,58 @@ DataTarget::DataTarget(ULONG64 baseAddress, ULONG64 contractDescriptorAddress) :
 
 DataTarget::~DataTarget()
 {
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+    InterlockedDecrement(&s_debugLiveDataTargets);
+    InterlockedCompareExchangePointer(
+        reinterpret_cast<PVOID volatile*>(&s_debugDataTarget),
+        nullptr,
+        this);
+#endif
     if (m_debuggerServices != nullptr)
     {
         m_debuggerServices->Release();
     }
 }
+
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+LONG DataTarget::DebugLiveCount()
+{
+    return s_debugLiveDataTargets;
+}
+
+bool DataTarget::DebugLiveAllocation(long* requestNumber)
+{
+    DataTarget* target = s_debugDataTarget;
+    if (target == nullptr)
+    {
+        return false;
+    }
+
+    char* fileName = nullptr;
+    int lineNumber = 0;
+    return _CrtIsMemoryBlock(
+        target,
+        sizeof(DataTarget),
+        requestNumber,
+        &fileName,
+        &lineNumber) != FALSE;
+}
+
+void* DataTarget::operator new(size_t size)
+{
+    return _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
+}
+
+void DataTarget::operator delete(void* memory)
+{
+    _free_dbg(memory, _NORMAL_BLOCK);
+}
+
+void DataTarget::operator delete(void* memory, size_t)
+{
+    _free_dbg(memory, _NORMAL_BLOCK);
+}
+#endif
 
 STDMETHODIMP
 DataTarget::QueryInterface(

@@ -12,6 +12,14 @@ private:
 public:
     DataTarget(ULONG64 baseAddress, ULONG64 contractDescriptorAddress = 0);
     virtual ~DataTarget();
+
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+    static LONG DebugLiveCount();
+    static bool DebugLiveAllocation(long* requestNumber);
+    static void* operator new(size_t size);
+    static void operator delete(void* memory);
+    static void operator delete(void* memory, size_t size);
+#endif
     
     // IUnknown.
     STDMETHOD(QueryInterface)(

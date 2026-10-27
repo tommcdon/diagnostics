@@ -3,8 +3,14 @@
 
 #include "exts.h"
 #include "disasm.h"
+#include "platform/datatarget.h"
 
 #ifndef FEATURE_PAL
+
+#if defined(_DEBUG)
+#include <crtdbg.h>
+#include <stdio.h>
+#endif
 
 #define VER_PRODUCTVERSION_W        (0x0100)
 
@@ -392,6 +398,12 @@ DebugExtensionInitialize(PULONG Version, PULONG Flags)
     *Version = DEBUG_EXTENSION_VERSION(2, 0);
     *Flags = 0;
 
+#if defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+#endif
+
     if (g_Initialized)
     {
         return S_OK;
@@ -459,6 +471,11 @@ DebugExtensionUninitialize(void)
     // Execute all registered cleanup tasks
     OnUnloadTask::Run();
     g_pRuntime = nullptr;
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
+    fprintf(stderr, "SOS_CRT_DATATARGET_LIVE=%ld\n", DataTarget::DebugLiveCount());
+    _CrtDumpMemoryLeaks();
+    fflush(stderr);
+#endif
     g_Initialized = false;
 }
 
